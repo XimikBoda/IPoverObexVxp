@@ -52,6 +52,13 @@ enum bt_obex_events{
 	GOEP_AUTHORIZE_RES,
 };
 
+typedef struct ilm_struct {
+	VMUINT8 src_mod_id;
+	VMUINT8 dest_mod_id;
+	VMUINT8 sap_id;
+	VMUINT8 msg_id;
+} ilm_struct;
+
 VMBOOL bt_opp_pre_init();
 
 #ifdef __cplusplus
