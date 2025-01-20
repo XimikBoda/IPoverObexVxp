@@ -7,6 +7,7 @@
 #include <vmres.h>
 
 #include <console.h>
+#include <opp.h>
 
 VMINT		layer_hdl[1];	// layer handle array. 
 VMUINT8* layer_buf = 0;
@@ -30,6 +31,8 @@ void vm_main(void) {
 
 	console_init(screen_w, screen_h, (VMUINT16*)layer_buf);
 	cprintf("IPoverObexVxp Test injection\n");
+
+	bt_opp_pre_init();
 }
 
 void handle_sysevt(VMINT message, VMINT param) {
