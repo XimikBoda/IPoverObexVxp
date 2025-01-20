@@ -24,13 +24,13 @@ void console_init(int _scr_w, int _scr_h, unsigned short* _scr_buf) {
 	scr_width = _scr_w;
 	scr_height = _scr_h;
 	scr_buf = _scr_buf;
-	c_w = scr_height / char_width;
+	c_w = scr_width / char_width;
 }
 
 static void scroll_up() {
 	int line_size = scr_width * char_height;
-	memcpy(scr_buf, scr_buf + line_size * 2, (scr_width * scr_height - line_size) * 2);
-	memset(scr_buf + (scr_width * scr_height - line_size) * 2, 0, line_size * 2);
+	memmove(scr_buf, scr_buf + line_size, (scr_width * scr_height - line_size) * 2);
+	memset(scr_buf + (scr_width * scr_height - line_size), 0, line_size * 2);
 }
 
 static void draw_xy_char(int x, int y, char c) {
@@ -46,15 +46,13 @@ static void draw_xy_char(int x, int y, char c) {
 }
 
 void console_put_char(char c) {
-	if (need_scroll) {
+	if (need_scroll || (c_x == c_w && c != '\n')) {
 		scroll_up();
 		need_scroll = 0;
-	}
-	if (c_x == c_w || c == '\n') {
-		need_scroll = 1;
 		c_x = 0;
 	}
 	if (c == '\n') {
+		need_scroll = 1;
 		flush_layer();
 		return;
 	}
@@ -67,7 +65,7 @@ void console_put_str(const char* str) {
 		console_put_char(*str);
 		++str;
 	}
-	flush_layer();
+	//flush_layer();
 }
 
 static char buf[1024];
