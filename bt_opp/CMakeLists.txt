@@ -4,6 +4,7 @@ set(PROJECT_NAME "bt_opp")
 
 add_library(${PROJECT_NAME} STATIC 
     opp.c opp.h
+    opp_inject.c
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ".")

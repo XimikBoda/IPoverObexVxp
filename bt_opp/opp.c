@@ -6,7 +6,7 @@
 static VMUINT32 bt_obex_events_base = 0;
 
 static VMUINT32 find_a4(const VMUINT8* find_buf, int len) {
-	for (int i = 0; i < 0x1000000; i += 4) {
+	for (int i = 0x700000; i < 0x1000000; i += 4) {
 		VMUINT8* adr = (VMUINT8*)(((VMUINT32)vm_get_sym_entry) & (0xFF000000)) + i;
 		if (!memcmp(adr, find_buf, len)) {
 			return (((VMUINT32)adr) | 1);
@@ -17,7 +17,7 @@ static VMUINT32 find_a4(const VMUINT8* find_buf, int len) {
 }
 
 static VMUINT32 find2_a4(const VMUINT8* find_buf1, const VMUINT8* find_buf2, int len) {
-	for (int i = 0; i < 0x1000000; i += 4) {
+	for (int i = 0x700000; i < 0x1000000; i += 4) {
 		VMUINT8* adr = (VMUINT8*)(((VMUINT32)vm_get_sym_entry) & (0xFF000000)) + i;
 
 		int j = 0;
@@ -33,15 +33,32 @@ static VMUINT32 find2_a4(const VMUINT8* find_buf1, const VMUINT8* find_buf2, int
 	return 0;
 }
 
+static VMUINT32 thumb_bl(void* adr) {
+	VMUINT16 high = ((VMUINT16*)adr)[0];
+	VMUINT16 low = ((VMUINT16*)adr)[1];
 
+	VMUINT16 imm10 = high & 0x03FF;
+	VMUINT16 imm11 = low & 0x07FF;
 
-struct magik_el{
+	VMUINT8 J1 = (low >> 13) & 1;
+	VMUINT8 J2 = (low >> 11) & 1;
+	VMUINT8 S = (high >> 10) & 1;
+
+	int I1 = !(J1 ^ S);
+	int I2 = !(J2 ^ S);
+
+	VMUINT32 offset = (I1 << 23) | (I2 << 22) | (imm10 << 12) | (imm11 << 1);
+	if (S)
+		offset |= (0xFF << 24);
+
+	return offset + (VMUINT32)adr + 4;
+}
+
+struct magik_el {
 	const VMUINT8* magic_buf;
 	const VMUINT32 size;
 };
 
-
-typedef VMUINT8(*MSGHandler) (void* local_buf, int src_mod, ilm_struct* ilm);
 
 void (*mmi_bt_obex_event_hdlr_init)(void) = 0;
 void (*mmi_frm_set_protocol_event_handler)(VMUINT16 eventID, MSGHandler funcPtr, VMBOOL isMultiHandler) = 0;
@@ -49,8 +66,8 @@ void (*mmi_frm_set_protocol_event_handler)(VMUINT16 eventID, MSGHandler funcPtr,
 void (*srv_bt_cm_connect_ind)(VMUINT32 conn_id) = 0;
 void (*srv_bt_cm_stop_conn)(VMUINT32 conn_id) = 0;
 
-VMUINT32(*srv_opp_open)(VMUINT8 role) = 0;
-VMUINT32(*srv_opp_close)(VMUINT32 srv_hd) = 0;
+VMUINT32 (*srv_opp_open)(VMUINT8 role) = 0;
+VMUINT32 (*srv_opp_close)(VMUINT32 srv_hd) = 0;
 
 void (*srv_oppc_send_push_req)(int goep_conn_id, int pkt_type, VMINT32 total_obj_len, VMWSTR obj_name, int obj_mime, VMUINT32* frag_ptr, VMUINT16 frag_len) = 0;
 void (*srv_oppc_send_abort_req)(VMINT8 goep_conn_id) = 0;
@@ -124,7 +141,11 @@ VMBOOL bt_opp_pre_init() {
 #endif // WIN32
 
 	INJECT(mmi_bt_obex_event_hdlr_init);
-	INJECT(mmi_frm_set_protocol_event_handler);
+	//INJECT(mmi_frm_set_protocol_event_handler);
+
+	mmi_frm_set_protocol_event_handler = (void*)thumb_bl((char*)mmi_bt_obex_event_hdlr_init + 8);
+	DEBUG_PRINT_INJECT(mmi_frm_set_protocol_event_handler);
+
 
 	INJECT2(srv_bt_cm_connect_ind);
 	INJECT_ARR(srv_bt_cm_stop_conn);
@@ -140,4 +161,6 @@ VMBOOL bt_opp_pre_init() {
 
 	bt_obex_events_base = *(VMUINT32*)((((VMUINT32)mmi_bt_obex_event_hdlr_init) & ~1uL) + 0xbc);
 	DEBUG_PRINTF("bt_obex_events_base->%d\n", bt_obex_events_base);
+
+	return TRUE;
 }
