@@ -77,7 +77,7 @@ int cprintf(char const* const format, ...) {
 	va_list aptr;
 
 	va_start(aptr, format);
-	int ret = vsprintf(buf, format, aptr);
+	int ret = vm_vsprintf(buf, format, aptr);
 	va_end(aptr);
 
 	console_put_str(buf);
