@@ -5,6 +5,17 @@
 
 static VMUINT32 bt_obex_events_base = 0;
 
+static VMUINT32 find_a2(const VMUINT8* find_buf, int len) {
+	for (int i = 0x700000; i < 0x1000000; i += 2) {
+		VMUINT8* adr = (VMUINT8*)(((VMUINT32)vm_get_sym_entry) & (0xFF000000)) + i;
+		if (!memcmp(adr, find_buf, len)) {
+			return (((VMUINT32)adr) | 1);
+			break;
+		}
+	}
+	return 0;
+}
+
 static VMUINT32 find_a4(const VMUINT8* find_buf, int len) {
 	for (int i = 0x700000; i < 0x1000000; i += 4) {
 		VMUINT8* adr = (VMUINT8*)(((VMUINT32)vm_get_sym_entry) & (0xFF000000)) + i;
@@ -54,12 +65,6 @@ static VMUINT32 thumb_bl(void* adr) {
 	return offset + (VMUINT32)adr + 4;
 }
 
-struct magik_el {
-	const VMUINT8* magic_buf;
-	const VMUINT32 size;
-};
-
-
 void (*mmi_bt_obex_event_hdlr_init)(void) = 0;
 void (*mmi_frm_set_protocol_event_handler)(VMUINT16 eventID, MSGHandler funcPtr, VMBOOL isMultiHandler) = 0;
 
@@ -75,26 +80,15 @@ void (*srv_oppc_send_disconnect_req)(VMINT8 goep_conn_id, int tpdisconn_flag) = 
 VMINT32 (*srv_oppc_send_begin)(VMINT32 srv_hd, void* dst_dev, VMUINT8* buffer, VMUINT16 buf_size) = 0;
 void (*srv_oppc_notify_app)(VMINT32 event_id, void* para) = 0;
 
-#define MAGIK_TO_BS(x) (x), sizeof(x)
-#define MAGIK_TO_BS2(x) (x##_1), (x##_2), sizeof(x##_1)
-
 // mmi
 static const VMUINT8 mmi_bt_obex_event_hdlr_init_Magik[] = { 0x10, 0xB5, 0x2D, 0x49, 0x2D, 0x48, 0x00, 0x22 };
-static const VMUINT8 mmi_frm_set_protocol_event_handler_Magik[] = { 0x13, 0x00, 0x0A, 0x00, 0x01, 0x00, 0x00, 0xB5, 0x00, 0x20 };
+//static const VMUINT8 mmi_frm_set_protocol_event_handler_Magik[] = { 0x13, 0x00, 0x0A, 0x00, 0x01, 0x00, 0x00, 0xB5, 0x00, 0x20 };
 
 // srv_bt
 static const VMUINT8 srv_bt_cm_connect_ind_Magik_1[] = { 0xF0, 0xB5, 0x04, 0x00, 0x85, 0xB0, 0x3F, 0xD0, 0x06, 0x2C, 0x3D, 0xD8, 0x20, 0x00 }; // I hope this works.
 static const VMUINT8 srv_bt_cm_connect_ind_Magik_2[] = { 0x70, 0xB5, 0x04, 0x00, 0x86, 0xB0, 0x52, 0xD0, 0x06, 0x2C, 0x50, 0xD8, 0x20, 0x00 };
 
-static const VMUINT8 srv_bt_cm_stop_conn_Magik_1[] = { 0xF8, 0xB5, 0x04, 0x00, 0x7A, 0xD0, 0x06, 0x2C, 0x78, 0xD8, 0x00, 0x22, 0x11, 0x00, 0x14, 0x20 };
-static const VMUINT8 srv_bt_cm_stop_conn_Magik_2[] = { 0xFE, 0xB5, 0x04, 0x00, 0x7E, 0xD0, 0x06, 0x2C, 0x7C, 0xD8, 0x78, 0x4D, 0x20, 0x01, 0x41, 0x19 };
-static const VMUINT8 srv_bt_cm_stop_conn_Magik_3[] = { 0xF0, 0xB5, 0x05, 0x00, 0x85, 0xB0, 0x7E, 0xD0, 0x06, 0x2D, 0x7C, 0xD8, 0x7C, 0x48, 0x29, 0x01, 0x09, 0x18 };
-
-static const struct magik_el srv_bt_cm_stop_conn_Magik_Arr[] = {
-	{MAGIK_TO_BS(srv_bt_cm_stop_conn_Magik_1)},
-	{MAGIK_TO_BS(srv_bt_cm_stop_conn_Magik_2)},
-	{MAGIK_TO_BS(srv_bt_cm_stop_conn_Magik_3)},
-};
+static const VMUINT8 srv_bt_cm_stop_conn_Magik_before_bl[] = { 0x60, 0x68, 0x03, 0x21, 0x41, 0x73, 0x42, 0x6A, 0x01, 0x6A, 0x02, 0x92, 0x01, 0x91, 0x80, 0x69 };
 
 // srv_opp
 static const VMUINT8 srv_opp_open_Magik[] = { 0x09, 0x49, 0x01, 0x28, 0x05, 0xD1, 0x09, 0x68, 0x08, 0x68, 0x00, 0x28, 0x09, 0xD1, 0x01, 0x20, 0x05, 0xE0 };
@@ -116,6 +110,11 @@ static const VMUINT8 srv_oppc_notify_app_Magik[] = { 0x30, 0xB4, 0x04, 0x00, 0x0
 
 #define DEBUG_PRINT_INJECT(x) DEBUG_PRINTF(#x "->0x%08X\n", x);
 
+#define INJECT_ASSERT(x) //if (!x) return FALSE;
+
+#define MAGIK_TO_BS(x) (x), sizeof(x)
+#define MAGIK_TO_BS2(x) (x##_1), (x##_2), sizeof(x##_1)
+
 #define INJECT_NE(x) \
 	x = (void*)find_a4(MAGIK_TO_BS(x##_Magik)); \
 	DEBUG_PRINT_INJECT(x);
@@ -124,15 +123,16 @@ static const VMUINT8 srv_oppc_notify_app_Magik[] = { 0x30, 0xB4, 0x04, 0x00, 0x0
 	x = (void*)find2_a4(MAGIK_TO_BS2(x##_Magik)); \
 	DEBUG_PRINT_INJECT(x);
 
-#define INJECT_NE_ARR(x, i) \
-	x = (void*)find_a4(x##_Magik_Arr[i].magic_buf, x##_Magik_Arr[i].size); 
+#define INJECT_NEbBL(x) \
+	VMUINT32 x##_before = find_a2(MAGIK_TO_BS(x##_Magik_before_bl)); \
+	DEBUG_PRINT_INJECT(x##_before); INJECT_ASSERT(x); \
+	x = (void*)thumb_bl((void*)(x##_before + sizeof(x##_Magik_before_bl)));\
+	DEBUG_PRINT_INJECT(x);\
+	
 
-#define INJECT(x) INJECT_NE(x) //if (!x) return FALSE;
-#define INJECT2(x) INJECT_NE2(x) //if (!x) return FALSE;
-#define INJECT_ARR(x) \
-	for(int i = 0; i < NELEMS(x##_Magik_Arr) && !(x); ++i) { INJECT_NE_ARR(x, i) } \
-	DEBUG_PRINT_INJECT(x);  //if (!x) return FALSE;
-
+#define INJECT(x) INJECT_NE(x) INJECT_ASSERT(x)
+#define INJECT2(x) INJECT_NE2(x) INJECT_ASSERT(x)
+#define INJECTbBL(x) INJECT_NEbBL(x) INJECT_ASSERT(x)
 
 VMBOOL bt_opp_pre_init() {
 #ifdef WIN32
@@ -146,9 +146,8 @@ VMBOOL bt_opp_pre_init() {
 	mmi_frm_set_protocol_event_handler = (void*)thumb_bl((char*)mmi_bt_obex_event_hdlr_init + 8);
 	DEBUG_PRINT_INJECT(mmi_frm_set_protocol_event_handler);
 
-
 	INJECT2(srv_bt_cm_connect_ind);
-	INJECT_ARR(srv_bt_cm_stop_conn);
+	INJECTbBL(srv_bt_cm_stop_conn);
 
 	INJECT(srv_opp_open);
 	INJECT(srv_opp_close);
