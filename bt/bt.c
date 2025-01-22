@@ -2,7 +2,7 @@
 #include <vmbtcm.h>
 #include <console.h>
 #include <string.h>
-#include "opp.h"
+#include "bt.h"
 
 
 static VMINT32 opp_hndl = -1;

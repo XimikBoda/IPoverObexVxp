@@ -7,7 +7,7 @@
 #include <vmres.h>
 
 #include <console.h>
-#include <opp.h>
+#include <bt.h>
 
 VMINT		layer_hdl[1];	// layer handle array. 
 VMUINT8* layer_buf = 0;

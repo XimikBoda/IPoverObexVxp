@@ -1,7 +1,7 @@
 #include <vmsys.h>
 #include <console.h>
 #include <string.h>
-#include "opp.h"
+#include "bt.h"
 
 static VMUINT32 bt_obex_events_base = 0;
 

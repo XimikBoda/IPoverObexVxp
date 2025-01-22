@@ -21,7 +21,7 @@ add_subdirectory(core)
 add_subdirectory(mreapi)
 add_subdirectory(vxp)
 add_subdirectory(run)
-add_subdirectory(bt_opp)
+add_subdirectory(bt)
 add_subdirectory(console)
 
 add_subdirectory(main)
