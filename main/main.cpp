@@ -17,6 +17,7 @@ VMINT screen_h = 0;
 
 void handle_sysevt(VMINT message, VMINT param); // system events 
 
+VMUINT8 my_mac[6] = { 0x1C, 0xBF, 0xC0, 0x2A, 0xD8, 0xEA }; // temporarily here for testing
 
 void vm_main(void) {
 	layer_hdl[0] = -1;
@@ -32,7 +33,9 @@ void vm_main(void) {
 	console_init(screen_w, screen_h, (VMUINT16*)layer_buf);
 	cprintf("IPoverObexVxp Test injection\n");
 
-	bt_opp_pre_init();
+	bt_opp_preinit();
+	bt_opp_init();
+	bt_opp_connect(my_mac);
 }
 
 void handle_sysevt(VMINT message, VMINT param) {
@@ -60,6 +63,7 @@ void handle_sysevt(VMINT message, VMINT param) {
 	case VM_MSG_INACTIVE:		
 		break;	
 	case VM_MSG_QUIT:
+		bt_opp_deinit();
 		break;	
 	}
 #endif

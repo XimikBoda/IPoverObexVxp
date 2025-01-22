@@ -52,6 +52,12 @@ enum bt_obex_events{
 	GOEP_AUTHORIZE_RES,
 };
 
+enum opp_roles{
+	OPP_ROLE_CLIENT = 1,
+	OPP_ROLE_SERVER,
+	OPP_ROLE_END
+};
+
 typedef struct ilm_struct {
 	VMUINT8 src_mod_id;
 	VMUINT8 dest_mod_id;
@@ -76,7 +82,19 @@ extern void (*srv_oppc_send_disconnect_req)(VMINT8 goep_conn_id, int tpdisconn_f
 extern VMINT32 (*srv_oppc_send_begin)(VMINT32 srv_hd, void* dst_dev, VMUINT8* buffer, VMUINT16 buf_size);
 extern void (*srv_oppc_notify_app)(VMINT32 event_id, void* para);
 
-VMBOOL bt_opp_pre_init();
+VMBOOL bt_opp_preinit();
+VMBOOL bt_opp_init();
+VMBOOL bt_opp_connect(VMUINT8* mac);
+VMBOOL bt_opp_deinit();
+
+#define DEBUG_PRINTF(...) cprintf(__VA_ARGS__)
+
+#ifdef WIN32
+#define PLATFORM_ASSERT() DEBUG_PRINTF("WIN32 is not support for now\n"); return FALSE;
+#else
+#define PLATFORM_ASSERT() ;
+#endif // WIN32
+
 
 #ifdef __cplusplus
 }

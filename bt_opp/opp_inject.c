@@ -133,10 +133,7 @@ static const VMUINT8 srv_oppc_notify_app_Magic[] = { 0x30, 0xB4, 0x04, 0x00, 0x0
 #define INJECTbBL(x) INJECT_NEbBL(x) INJECT_ASSERT(x)
 
 VMBOOL bt_opp_preinit() {
-#ifdef WIN32
-	DEBUG_PRINTF("WIN32 is not support for now\n");
-	return FALSE;
-#endif // WIN32
+	PLATFORM_ASSERT();
 
 	INJECT(mmi_bt_obex_event_hdlr_init);
 	//INJECT(mmi_frm_set_protocol_event_handler);
