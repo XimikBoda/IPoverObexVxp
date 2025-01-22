@@ -8,54 +8,35 @@ extern "C" {
 typedef VMINT(*vm_get_sym_entry_t)(char* symbol);
 extern vm_get_sym_entry_t vm_get_sym_entry;
 
-
-enum bt_obex_events{
-	GOEP_REGISTER_SERVER_REQ,
-	GOEP_REGISTER_SERVER_RSP,
-	GOEP_DEREGISTER_SERVER_REQ,
-	GOEP_DEREGISTER_SERVER_RSP,
-	GOEP_CONNECT_IND,
-	GOEP_CONNECT_RES,
-	GOEP_PUSH_IND,
-	GOEP_PUSH_RES,
-	GOEP_PULL_IND,
-	GOEP_PULL_RES,
-	GOEP_SET_FOLDER_IND,
-	GOEP_SET_FOLDER_RES,
-	GOEP_ABORT_IND,
-	GOEP_ABORT_RES,
-	GOEP_AUTH_REQ,
-	GOEP_AUTH_RSP,
-	GOEP_REGISTER_CLIENT_REQ,
-	GOEP_REGISTER_CLIENT_RSP,
-	GOEP_DEREGISTER_CLIENT_REQ,
-	GOEP_DEREGISTER_CLIENT_RSP,
-	GOEP_CONNECT_REQ,
-	GOEP_CONNECT_RSP,
-	GOEP_PUSH_REQ,
-	GOEP_PUSH_RSP,
-	GOEP_PULL_REQ,
-	GOEP_PULL_RSP,
-	GOEP_SET_FOLDER_REQ,
-	GOEP_SET_FOLDER_RSP,
-	GOEP_ABORT_REQ,
-	GOEP_ABORT_RSP,
-	GOEP_DISCONNECT_REQ,
-	GOEP_DISCONNECT_RSP,
-	GOEP_DISCONNECT_IND,
-	GOEP_DISCONNECT_RES,
-	GOEP_TPDISCONNECT_REQ,
-	GOEP_AUTH_IND,
-	GOEP_AUTH_RES,
-	GOEP_OPP_SUPPORTED_FORMATS_IND,
-	GOEP_AUTHORIZE_IND,
-	GOEP_AUTHORIZE_RES,
-};
-
-enum opp_roles{
-	OPP_ROLE_CLIENT = 1,
-	OPP_ROLE_SERVER,
-	OPP_ROLE_END
+enum bt_spp_events {
+	BT_SPP_ACTIVATE_REQ,
+	BT_SPP_CONNECT_REQ,
+	BT_SPP_SCO_CONNECT_REQ,
+	BT_SPP_SEND_DATA_REQ,
+	BT_SPP_GET_DATA_REQ,
+	BT_SPP_DEACTIVATE_REQ,
+	BT_SPP_DISCONNECT_REQ,
+	BT_SPP_AUDIO_CONNECT_REQ,
+	BT_SPP_AUDIO_DISCONNECT_REQ,
+	BT_SPP_CONNECT_IND_RES,
+	BT_SPP_AUTH_RSP,
+	BT_SPP_UART_OWNER_CNF,
+	BT_SPP_UART_PLUGOUT_CNF,
+	BT_SPP_CONNECT_IND = 24,
+	BT_SPP_CONNECT_IND_REQ,
+	BT_SPP_SCO_CONNECT_IND,
+	BT_SPP_DISCONNECT_IND,
+	BT_SPP_ACTIVATE_CNF,
+	BT_SPP_DEACTIVATE_CNF,
+	BT_SPP_DISCONNECT_CNF,
+	BT_SPP_AUTH_REQ,
+	BT_SPP_AUDIO_CONNECT_CNF,
+	BT_SPP_AUDIO_CONNECT_IND,
+	BT_SPP_AUDIO_DISCONNECT_CNF,
+	BT_SPP_AUDIO_DISCONNECT_IND,
+	BT_SPP_SCO_RSSI_IND,
+	BT_SPP_CONNECT_CNF,
+	BT_SPP_UART_OWNER_IND,
 };
 
 typedef struct ilm_struct {
@@ -65,14 +46,40 @@ typedef struct ilm_struct {
 	VMUINT8 msg_id;
 } ilm_struct;
 
+typedef struct
+{
+	VMUINT8 ref_count;
+	VMUINT16 msg_len;
+	VMUINT32 lap;
+	VMUINT8 uap;
+	VMUINT16 nap;
+	VMUINT8* txBufPtr;
+	VMUINT8* rxBufPtr;
+	VMUINT32 txBufSize;
+	VMUINT32 rxBufSize;
+	VMUINT8 server_chnl_num;
+	VMUINT16 uuid;
+	VMUINT32 req_id;
+	VMUINT8 sec_level;
+} bt_spp_connect_req_struct;
+
 typedef VMUINT8 (*MSGHandler) (void* local_buf, int src_mod, ilm_struct* ilm);
 
 extern void (*mmi_bt_obex_event_hdlr_init)(void);
 extern void (*mmi_frm_set_protocol_event_handler)(VMUINT16 eventID, MSGHandler funcPtr, VMBOOL isMultiHandler);
 
+extern void* (*construct_local_para)(VMUINT16 local_para_size, VMINT32 direction);
+
+extern VMINT32(*srv_bt_cm_start_conn)(VMBOOL in_out, VMINT32 profile_id, void* dev_addr, VMCHAR* dev_name);
+extern void (*srv_bt_cm_connect_ind)(VMUINT32 conn_id);
+extern void (*srv_bt_cm_stop_conn)(VMUINT32 conn_id);
+
+extern void (*srv_opp_send_ilm)(VMUINT32 msg_id, void* local_para_p);
 
 VMBOOL bt_preinit();
 VMBOOL bt_spp_init();
+VMBOOL bt_spp_connect(VMUINT8* mac);
+VMBOOL bt_deinit();
 
 #define DEBUG_PRINTF(...) cprintf(__VA_ARGS__)
 

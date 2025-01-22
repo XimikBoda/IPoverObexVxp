@@ -19,6 +19,10 @@ void handle_sysevt(VMINT message, VMINT param); // system events
 
 VMUINT8 my_mac[6] = { 0x1C, 0xBF, 0xC0, 0x2A, 0xD8, 0xEA }; // temporarily here for testing
 
+void key_handler(VMINT event, VMINT keycode) {
+	vm_graphic_flush_layer(layer_hdl, 1);
+}
+
 void vm_main(void) {
 	layer_hdl[0] = -1;
 	screen_w = vm_graphic_get_screen_width();
@@ -29,12 +33,14 @@ void vm_main(void) {
 	vm_graphic_set_clip(0, 0, screen_w, screen_h);
 	
 	vm_reg_sysevt_callback(handle_sysevt);
+	vm_reg_keyboard_callback(key_handler);
 
 	console_init(screen_w, screen_h, (VMUINT16*)layer_buf);
 	cprintf("IPoverObexVxp Test injection\n");
 
 	bt_preinit();
 	bt_spp_init();
+	bt_spp_connect(my_mac);
 }
 
 void handle_sysevt(VMINT message, VMINT param) {
@@ -47,6 +53,7 @@ void handle_sysevt(VMINT message, VMINT param) {
 	case VM_MSG_HIDE:
 		break;
 	case VM_MSG_QUIT:
+		bt_deinit();
 		break;
 	}
 #else
@@ -62,7 +69,7 @@ void handle_sysevt(VMINT message, VMINT param) {
 	case VM_MSG_INACTIVE:		
 		break;	
 	case VM_MSG_QUIT:
-		//bt_deinit();
+		bt_deinit();
 		break;	
 	}
 #endif
