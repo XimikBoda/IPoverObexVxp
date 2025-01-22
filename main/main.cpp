@@ -33,9 +33,8 @@ void vm_main(void) {
 	console_init(screen_w, screen_h, (VMUINT16*)layer_buf);
 	cprintf("IPoverObexVxp Test injection\n");
 
-	bt_opp_preinit();
-	bt_opp_init();
-	bt_opp_connect(my_mac);
+	bt_preinit();
+	bt_spp_init();
 }
 
 void handle_sysevt(VMINT message, VMINT param) {
@@ -63,7 +62,7 @@ void handle_sysevt(VMINT message, VMINT param) {
 	case VM_MSG_INACTIVE:		
 		break;	
 	case VM_MSG_QUIT:
-		bt_opp_deinit();
+		//bt_deinit();
 		break;	
 	}
 #endif

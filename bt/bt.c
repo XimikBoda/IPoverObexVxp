@@ -25,18 +25,13 @@ static void print_hex(const char* s, unsigned char* h, int l) {
 }
 
 
-VMBOOL bt_opp_init() {
+VMBOOL bt_spp_init() {
 	PLATFORM_ASSERT();
 
 	DEBUG_PRINTF("BT statud: %s\n", bt_pw_st[vm_btcm_get_power_status()]);
-
-	opp_hndl = srv_opp_open(OPP_ROLE_CLIENT);
-	DEBUG_PRINTF("opp_hndl = %d\n", opp_hndl);
-	if (opp_hndl < 0)
-		return FALSE;
 }
 
-VMBOOL bt_opp_connect(VMUINT8* mac) {
+VMBOOL bt_spp_connect(VMUINT8* mac) {
 	VMUINT8 mac8[8];
 	bt_mac_conv(mac8, mac);
 	print_hex("Mac:  ", mac, 6);
@@ -45,15 +40,3 @@ VMBOOL bt_opp_connect(VMUINT8* mac) {
 	PLATFORM_ASSERT();
 }
 
-VMBOOL bt_opp_deinit() {
-	PLATFORM_ASSERT();
-
-	mmi_bt_obex_event_hdlr_init();
-
-	if (opp_hndl < 0)
-		return FALSE;
-	int res = srv_opp_close(opp_hndl); 
-	DEBUG_PRINTF("srv_opp_close ret %d\n", res);
-
-	return res;
-}

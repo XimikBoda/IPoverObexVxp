@@ -70,22 +70,9 @@ typedef VMUINT8 (*MSGHandler) (void* local_buf, int src_mod, ilm_struct* ilm);
 extern void (*mmi_bt_obex_event_hdlr_init)(void);
 extern void (*mmi_frm_set_protocol_event_handler)(VMUINT16 eventID, MSGHandler funcPtr, VMBOOL isMultiHandler);
 
-extern void (*srv_bt_cm_connect_ind)(VMUINT32 conn_id);
-extern void (*srv_bt_cm_stop_conn)(VMUINT32 conn_id);
 
-extern VMUINT32 (*srv_opp_open)(VMUINT8 role);
-extern VMUINT32 (*srv_opp_close)(VMUINT32 srv_hd);
-
-extern void (*srv_oppc_send_push_req)(int goep_conn_id, int pkt_type, VMINT32 total_obj_len, VMWSTR obj_name, int obj_mime, VMUINT32* frag_ptr, VMUINT16 frag_len);
-extern void (*srv_oppc_send_abort_req)(VMINT8 goep_conn_id);
-extern void (*srv_oppc_send_disconnect_req)(VMINT8 goep_conn_id, int tpdisconn_flag);
-extern VMINT32 (*srv_oppc_send_begin)(VMINT32 srv_hd, void* dst_dev, VMUINT8* buffer, VMUINT16 buf_size);
-extern void (*srv_oppc_notify_app)(VMINT32 event_id, void* para);
-
-VMBOOL bt_opp_preinit();
-VMBOOL bt_opp_init();
-VMBOOL bt_opp_connect(VMUINT8* mac);
-VMBOOL bt_opp_deinit();
+VMBOOL bt_preinit();
+VMBOOL bt_spp_init();
 
 #define DEBUG_PRINTF(...) cprintf(__VA_ARGS__)
 
