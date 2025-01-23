@@ -80,11 +80,6 @@ VMBOOL bt_opp_init() {
 
 	DEBUG_PRINTF("BT statud: %s\n", bt_pw_st[vm_btcm_get_power_status()]);
 
-	opp_hndl = srv_opp_open(OPP_ROLE_CLIENT);
-	DEBUG_PRINTF("opp_hndl = %d\n", opp_hndl);
-	//if (opp_hndl < 0)
-	//	return FALSE;
-
 	mmi_frm_set_protocol_event_handler(FIX_OBEX_EVENT(GOEP_REGISTER_SERVER_RSP), opp_msg_handler, 0);
 	mmi_frm_set_protocol_event_handler(FIX_OBEX_EVENT(GOEP_DEREGISTER_SERVER_RSP), opp_msg_handler, 0);
 	mmi_frm_set_protocol_event_handler(FIX_OBEX_EVENT(GOEP_CONNECT_IND), opp_msg_handler, 0);
@@ -115,13 +110,12 @@ VMBOOL bt_opp_connect(VMUINT8* mac) {
 
 	PLATFORM_ASSERT();
 	
-	/*conn_id = srv_bt_cm_start_conn(FALSE, 0xfffd, mac8, NULL);
+	conn_id = srv_bt_cm_start_conn(FALSE, 0xfffd, mac8, NULL);
 	DEBUG_PRINTF("conn_id = %d\n", conn_id);
 	if (conn_id < 0)
-		return FALSE;*/
+		return FALSE;
 
-	srv_oppc_send_begin(opp_hndl, mac8, buf_bt, 64 * 1024);
-	//oppc_send_connect_req(conn_id, buf_bt, 64 * 1024, mac8);
+	oppc_send_connect_req(conn_id, buf_bt, 64 * 1024, mac8);
 }
 
 VMBOOL bt_opp_deinit() {
@@ -129,15 +123,8 @@ VMBOOL bt_opp_deinit() {
 
 	mmi_bt_obex_event_hdlr_init();
 
-	//if (conn_id < 0)
-	//	return FALSE;
-
-	//srv_bt_cm_stop_conn(conn_id);
-	if (opp_hndl < 0)
+	if (conn_id < 0)
 		return FALSE;
 
-	int res = srv_opp_close(opp_hndl); 
-	DEBUG_PRINTF("srv_opp_close ret %d\n", res);
-
-	//return res;
+	srv_bt_cm_stop_conn(conn_id);
 }
