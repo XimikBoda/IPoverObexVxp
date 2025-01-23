@@ -4,6 +4,7 @@ extern "C" {
 #endif
 
 #include <vmsys.h>
+#include <vmbtcm.h>
 
 typedef VMINT(*vm_get_sym_entry_t)(char* symbol);
 extern vm_get_sym_entry_t vm_get_sym_entry;
@@ -52,6 +53,23 @@ enum bt_obex_events{
 	GOEP_AUTHORIZE_RES,
 };
 
+enum bt_obex_statuses {
+	GOEP_STATUS_SUCCESS,
+	GOEP_STATUS_FAILED,
+	GOEP_STATUS_PENDING,
+	GOEP_STATUS_DISCONNECT,
+	GOEP_STATUS_NO_CONNECT,
+	GOEP_STATUS_BUSY			 = 11,
+	GOEP_STATUS_NO_RESOURCES	 = 12,
+	GOEP_STATUS_INVALID_PARM	 = 18,
+	GOEP_STATUS_IN_PROGRESS		 = 19,
+	GOEP_STATUS_NOT_SUPPORTED	 = 23,
+	GOEP_STATUS_RESTRICTED		 = 20,
+	GOEP_STATUS_PACKET_TOO_SMALL = 31,
+	GOEP_STATUS_NO_SESSION		 = 32,
+	GOEP_STATUS_SCO_REJECT		 = 25
+};
+
 enum opp_roles{
 	OPP_ROLE_CLIENT = 1,
 	OPP_ROLE_SERVER,
@@ -59,19 +77,44 @@ enum opp_roles{
 };
 
 typedef struct ilm_struct {
-	VMUINT8 src_mod_id;
-	VMUINT8 dest_mod_id;
-	VMUINT8 sap_id;
-	VMUINT8 msg_id;
+	VMUINT16 src_mod_id;
+	VMUINT16 dest_mod_id;
+	VMUINT16 sap_id;
+	VMUINT16 msg_id;
 } ilm_struct;
+
+typedef struct
+{
+	VMUINT8 ref_count;
+	VMUINT16 msg_len;
+	VMUINT8 uuid[16];
+	VMUINT8 uuid_len;
+	VMUINT8 req_id;
+	vm_srv_bt_cm_bt_addr bd_addr;
+	VMUINT8 tp_type;
+	VMUINT8* buf_ptr;
+	VMUINT16 buf_size;
+	VMBOOL auth_use;
+	VMUINT8 passwd[16];
+	VMUINT8 passwd_len;
+	VMUINT8 realm[20];
+	VMUINT8 realm_len;
+} goep_connect_req_struct;
+
+#define MAX_OBEX_PACKET_LENGTH 0x4000 
 
 typedef VMUINT8 (*MSGHandler) (void* local_buf, int src_mod, ilm_struct* ilm);
 
 extern void (*mmi_bt_obex_event_hdlr_init)(void);
 extern void (*mmi_frm_set_protocol_event_handler)(VMUINT16 eventID, MSGHandler funcPtr, VMBOOL isMultiHandler);
 
+extern void (*srv_opp_send_ilm)(VMUINT32 msg_id, void* local_para_p);
+
+extern VMINT32(*srv_bt_cm_start_conn)(VMBOOL in_out, VMINT32 profile_id, void* dev_addr, VMCHAR* dev_name);
 extern void (*srv_bt_cm_connect_ind)(VMUINT32 conn_id);
 extern void (*srv_bt_cm_stop_conn)(VMUINT32 conn_id);
+
+extern void* (*construct_local_para)(VMUINT16 local_para_size, VMINT32 direction);
 
 extern VMUINT32 (*srv_opp_open)(VMUINT8 role);
 extern VMUINT32 (*srv_opp_close)(VMUINT32 srv_hd);

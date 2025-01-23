@@ -3,7 +3,7 @@
 #include <string.h>
 #include "opp.h"
 
-static VMUINT32 bt_obex_events_base = 0;
+VMUINT32 bt_obex_events_base = 0;
 
 static VMUINT32 find_a2(const VMUINT8* find_buf, int len) {
 	for (int i = 0x700000; i < 0x1000000; i += 2) {
@@ -68,17 +68,21 @@ static VMUINT32 thumb_bl(void* adr) {
 void (*mmi_bt_obex_event_hdlr_init)(void) = 0;
 void (*mmi_frm_set_protocol_event_handler)(VMUINT16 eventID, MSGHandler funcPtr, VMBOOL isMultiHandler) = 0;
 
+void* (*construct_local_para)(VMUINT16 local_para_size, VMINT32 direction) = 0;
+
+VMINT32(*srv_bt_cm_start_conn)(VMBOOL in_out, VMINT32 profile_id, void* dev_addr, VMCHAR* dev_name) = 0;
 void (*srv_bt_cm_connect_ind)(VMUINT32 conn_id) = 0;
 void (*srv_bt_cm_stop_conn)(VMUINT32 conn_id) = 0;
 
-VMUINT32 (*srv_opp_open)(VMUINT8 role) = 0;
-VMUINT32 (*srv_opp_close)(VMUINT32 srv_hd) = 0;
+void (*srv_opp_send_ilm)(VMUINT32 msg_id, void* local_para_p) = 0;
+VMUINT32(*srv_opp_open)(VMUINT8 role) = 0;
+VMUINT32(*srv_opp_close)(VMUINT32 srv_hd) = 0;
 
 void (*srv_oppc_send_push_req)(int goep_conn_id, int pkt_type, VMINT32 total_obj_len, VMWSTR obj_name, int obj_mime, VMUINT32* frag_ptr, VMUINT16 frag_len) = 0;
 void (*srv_oppc_send_abort_req)(VMINT8 goep_conn_id) = 0;
 void (*srv_oppc_send_disconnect_req)(VMINT8 goep_conn_id, int tpdisconn_flag) = 0;
-VMINT32 (*srv_oppc_send_begin)(VMINT32 srv_hd, void* dst_dev, VMUINT8* buffer, VMUINT16 buf_size) = 0;
-void (*srv_oppc_notify_app)(VMINT32 event_id, void* para) = 0;
+VMINT32(*srv_oppc_send_begin)(VMINT32 srv_hd, void* dst_dev, VMUINT8* buffer, VMUINT16 buf_size) = 0;
+//void (*srv_oppc_notify_app)(VMINT32 event_id, void* para) = 0;
 
 // mmi
 static const VMUINT8 mmi_bt_obex_event_hdlr_init_Magic[] = { 0x10, 0xB5, 0x2D, 0x49, 0x2D, 0x48, 0x00, 0x22 };
@@ -91,6 +95,7 @@ static const VMUINT8 srv_bt_cm_connect_ind_Magic_2[] = { 0x70, 0xB5, 0x04, 0x00,
 static const VMUINT8 srv_bt_cm_stop_conn_Magic_before_bl[] = { 0x60, 0x68, 0x03, 0x21, 0x41, 0x73, 0x42, 0x6A, 0x01, 0x6A, 0x02, 0x92, 0x01, 0x91, 0x80, 0x69 };
 
 // srv_opp
+static const VMUINT8 srv_opp_send_ilm_Magic[] = { 0x08, 0xB5, 0x00, 0x22, 0x00, 0x92, 0x0B, 0x00, 0x02, 0x00 };
 static const VMUINT8 srv_opp_open_Magic[] = { 0x09, 0x49, 0x01, 0x28, 0x05, 0xD1, 0x09, 0x68, 0x08, 0x68, 0x00, 0x28, 0x09, 0xD1, 0x01, 0x20, 0x05, 0xE0 };
 static const VMUINT8 srv_opp_close_Magic[] = { 0x70, 0xB5, 0x01, 0x21, 0x09, 0x4C, 0x49, 0x02, 0x00, 0x25, 0x88, 0x42, 0x01, 0xDB, 0x60, 0x68, 0x08, 0xE0 };
 
@@ -126,7 +131,7 @@ static const VMUINT8 srv_oppc_notify_app_Magic[] = { 0x30, 0xB4, 0x04, 0x00, 0x0
 	DEBUG_PRINT_INJECT(x##_before); INJECT_ASSERT(x##_before); \
 	x = (void*)thumb_bl((void*)(x##_before + sizeof(x##_Magic_before_bl)));\
 	DEBUG_PRINT_INJECT(x);\
-	
+
 
 #define INJECT(x) INJECT_NE(x) INJECT_ASSERT(x)
 #define INJECT2(x) INJECT_NE2(x) INJECT_ASSERT(x)
@@ -144,16 +149,28 @@ VMBOOL bt_opp_preinit() {
 	INJECT2(srv_bt_cm_connect_ind);
 	INJECTbBL(srv_bt_cm_stop_conn);
 
+	INJECT(srv_opp_send_ilm);
 	INJECT(srv_opp_open);
 	INJECT(srv_opp_close);
+
 
 	INJECT(srv_oppc_send_push_req);
 	INJECT2(srv_oppc_send_abort_req);
 	INJECT2(srv_oppc_send_disconnect_req);
 	INJECT(srv_oppc_send_begin);
-	INJECT(srv_oppc_notify_app);
+	//INJECT(srv_oppc_notify_app);
+
+	VMUINT32 j_construct_local_para = (thumb_bl((char*)srv_oppc_send_disconnect_req + 14) & ~0b11uL);
+	DEBUG_PRINT_INJECT(j_construct_local_para);
+
+	construct_local_para = (void*)*(VMUINT32*)(j_construct_local_para + 4);
+	DEBUG_PRINT_INJECT(construct_local_para);
+
+	srv_bt_cm_start_conn = (void*)(thumb_bl((char*)srv_oppc_send_begin + 42));
+	DEBUG_PRINT_INJECT(srv_bt_cm_start_conn);
 
 	bt_obex_events_base = *(VMUINT32*)((((VMUINT32)mmi_bt_obex_event_hdlr_init) & ~1uL) + 0xbc);
+	bt_obex_events_base -= 1;
 	DEBUG_PRINTF("bt_obex_events_base->%d\n", bt_obex_events_base);
 
 	return TRUE;
