@@ -158,6 +158,7 @@ VMBOOL bt_preinit() {
 	DEBUG_PRINTF("bt_sap_id->%d\n", bt_sap_id);
 
 	bt_obex_events_base = *(VMUINT32*)((((VMUINT32)mmi_bt_obex_event_hdlr_init) & ~1uL) + 0xbc);
+	bt_obex_events_base -= 1;
 	bt_spp_events_base = bt_obex_events_base - 375;
 	DEBUG_PRINTF("bt_obex_events_base->%d\n", bt_obex_events_base);
 	DEBUG_PRINTF("bt_spp_events_base->%d\n", bt_spp_events_base);
