@@ -76,6 +76,13 @@ enum opp_roles{
 	OPP_ROLE_END
 };
 
+typedef enum goep_pkt_types{
+	GOEP_FIRST_PKT = 0,
+	GOEP_NORMAL_PKT,
+	GOEP_FINAL_PKT,
+	GOEP_SINGLE_PKT
+};
+
 typedef struct ilm_struct {
 	VMUINT16 src_mod_id;
 	VMUINT16 dest_mod_id;
@@ -100,6 +107,31 @@ typedef struct
 	VMUINT8 realm[20];
 	VMUINT8 realm_len;
 } goep_connect_req_struct;
+
+#define GOEP_MSG_COMM \
+    VMUINT8 ref_count; \
+    VMUINT16 msg_len; \
+    VMUINT8 uuid[16];\
+    VMUINT8 uuid_len;\
+    VMUINT8 goep_conn_id\
+
+typedef struct
+{
+	GOEP_MSG_COMM;
+
+	VMUINT8 req_id;
+	VMUINT8 rsp_code;
+	VMUINT16 peer_mru;
+	VMUINT32 cm_conn_id;
+} goep_connect_rsp_struct;
+
+typedef struct
+{
+	GOEP_MSG_COMM;
+
+	VMUINT8 rsp_code;
+	VMUINT8 reason; 
+} goep_push_rsp_struct;
 
 #define MAX_OBEX_PACKET_LENGTH 0x4000 
 

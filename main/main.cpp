@@ -21,6 +21,14 @@ VMUINT8 my_mac[6] = { 0x1C, 0xBF, 0xC0, 0x2A, 0xD8, 0xEA }; // temporarily here 
 
 void key_handler(VMINT event, VMINT keycode) {
 	vm_graphic_flush_layer(layer_hdl, 1);
+	if (keycode == VM_KEY_NUM1) {
+		bt_opp_deinit();
+		vm_exit_app();
+	}
+}
+
+extern "C" VMUINT8* get_buf() {
+	return layer_buf;
 }
 
 void vm_main(void) {
@@ -53,6 +61,7 @@ void handle_sysevt(VMINT message, VMINT param) {
 	case VM_MSG_HIDE:
 		break;
 	case VM_MSG_QUIT:
+		bt_opp_deinit();
 		break;
 	}
 #else

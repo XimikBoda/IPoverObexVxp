@@ -1,5 +1,6 @@
 #include <vmsys.h>
 #include <vmbtcm.h>
+#include <vmchset.h>
 #include <console.h>
 #include <string.h>
 #include "opp.h"
@@ -10,11 +11,58 @@ extern VMUINT32 bt_obex_events_base;
 static VMINT32 opp_hndl = -1;
 static VMINT32 conn_id = -1;
 
+
+static VMINT32 opc_mtu = 0;
+
 static void* buf_bt = 0;
+
 
 
 static const char* bt_pw_st[4] = {
 	"On", "Off", "Switching on", "Switching off"
+};
+
+static const char* bt_obex_events_names[40] = {
+	"GOEP_REGISTER_SERVER_REQ",
+	"GOEP_REGISTER_SERVER_RSP",
+	"GOEP_DEREGISTER_SERVER_REQ",
+	"GOEP_DEREGISTER_SERVER_RSP",
+	"GOEP_CONNECT_IND",
+	"GOEP_CONNECT_RES",
+	"GOEP_PUSH_IND",
+	"GOEP_PUSH_RES",
+	"GOEP_PULL_IND",
+	"GOEP_PULL_RES",
+	"GOEP_SET_FOLDER_IND",
+	"GOEP_SET_FOLDER_RES",
+	"GOEP_ABORT_IND",
+	"GOEP_ABORT_RES",
+	"GOEP_AUTH_REQ",
+	"GOEP_AUTH_RSP",
+	"GOEP_REGISTER_CLIENT_REQ",
+	"GOEP_REGISTER_CLIENT_RSP",
+	"GOEP_DEREGISTER_CLIENT_REQ",
+	"GOEP_DEREGISTER_CLIENT_RSP",
+	"GOEP_CONNECT_REQ",
+	"GOEP_CONNECT_RSP",
+	"GOEP_PUSH_REQ",
+	"GOEP_PUSH_RSP",
+	"GOEP_PULL_REQ",
+	"GOEP_PULL_RSP",
+	"GOEP_SET_FOLDER_REQ",
+	"GOEP_SET_FOLDER_RSP",
+	"GOEP_ABORT_REQ",
+	"GOEP_ABORT_RSP",
+	"GOEP_DISCONNECT_REQ",
+	"GOEP_DISCONNECT_RSP",
+	"GOEP_DISCONNECT_IND",
+	"GOEP_DISCONNECT_RES",
+	"GOEP_TPDISCONNECT_REQ",
+	"GOEP_AUTH_IND",
+	"GOEP_AUTH_RES",
+	"GOEP_OPP_SUPPORTED_FORMATS_IND",
+	"GOEP_AUTHORIZE_IND",
+	"GOEP_AUTHORIZE_RES",
 };
 
 void bt_mac_conv(VMUINT8* out, VMUINT8* in) { //TODO move to another place
@@ -30,14 +78,44 @@ static void print_hex(const char* s, unsigned char* h, int l) {
 	DEBUG_PRINTF("\n");
 }
 
+static VMWSTR name[128];
+static VMSTR mime[80] = { 0 };
 static void oppc_connect_rsp_handler(void* msg) {
+	goep_connect_rsp_struct* rsp = (goep_connect_rsp_struct*)msg;
+	vm_ascii_to_ucs2(name, 128*2, "IpOverObex.txt");
+
+	if (rsp->rsp_code == GOEP_STATUS_SUCCESS)
+	{
+		if (rsp->peer_mru != 0 && rsp->peer_mru < MAX_OBEX_PACKET_LENGTH)
+			opc_mtu = rsp->peer_mru;
+		else
+			opc_mtu = MAX_OBEX_PACKET_LENGTH;
+
+		srv_bt_cm_connect_ind(rsp->req_id);
+
+		srv_oppc_send_push_req(rsp->req_id, GOEP_FIRST_PKT, 0x7FFFFFFF, name, mime, 0, 0);
+	}
+	else
+	{
+		srv_bt_cm_stop_conn(rsp->req_id);
+	}
 }
 
 static void oppc_push_rsp_handler(void* msg) {
+	goep_push_rsp_struct* rsp = (goep_push_rsp_struct*)msg;
+
+	if (rsp->rsp_code != GOEP_STATUS_SUCCESS)
+	{
+		srv_oppc_send_disconnect_req(rsp->goep_conn_id, TRUE);
+		return;
+	}
+	
+	srv_oppc_send_push_req(rsp->goep_conn_id, GOEP_NORMAL_PKT, 0x7FFFFFFF, name, mime, get_buf(), opc_mtu);
+
 }
 
 static VMUINT8 opp_event_handler(int msg_id, void* msg) {
-	DEBUG_PRINTF("bt_spp_msg_event(%d)\n", msg_id);
+	DEBUG_PRINTF("event(%d, %s)\n", msg_id, bt_obex_events_names[msg_id - bt_obex_events_base]);
 	switch (msg_id - bt_obex_events_base) {
 	case GOEP_CONNECT_RSP:
 		oppc_connect_rsp_handler(msg);
@@ -52,7 +130,7 @@ static VMUINT8 opp_msg_handler(void* msg, int src_mod, ilm_struct* ilm) {
 	opp_event_handler(ilm->msg_id, msg);
 }
 
-static void oppc_send_connect_req(VMINT conn_id, VMUINT8 buf, VMUINT16 buf_size, vm_srv_bt_cm_bt_addr *addr){
+static void oppc_send_connect_req(VMINT conn_id, VMUINT8 buf, VMUINT16 buf_size, vm_srv_bt_cm_bt_addr* addr) {
 	goep_connect_req_struct* req;
 
 	DEBUG_PRINTF("before construct_local_para \n");
@@ -109,7 +187,7 @@ VMBOOL bt_opp_connect(VMUINT8* mac) {
 	print_hex("Mac8: ", mac8, 8);
 
 	PLATFORM_ASSERT();
-	
+
 	conn_id = srv_bt_cm_start_conn(FALSE, 0xfffd, mac8, NULL);
 	DEBUG_PRINTF("conn_id = %d\n", conn_id);
 	if (conn_id < 0)
