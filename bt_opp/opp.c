@@ -19,8 +19,6 @@ static VMINT32 opc_mtu = 0;
 
 static void* buf_bt = 0;
 
-
-
 static const char* bt_pw_st[4] = {
 	"On", "Off", "Switching on", "Switching off"
 };
@@ -94,7 +92,9 @@ static void oppc_connect_rsp_handler(void* msg) {
 		else
 			opc_mtu = MAX_OBEX_PACKET_LENGTH;
 
-		//srv_bt_cm_connect_ind(rsp->req_id);
+#ifdef REGISTER_CONN
+		srv_bt_cm_connect_ind(rsp->req_id);
+#endif // REGISTER_CONN
 
 		srv_oppc_send_push_req(rsp->req_id, GOEP_FIRST_PKT, 0x7FFFFFFF, name + 1, mime, 0, 0);
 	}
@@ -132,11 +132,11 @@ static void opps_authorize_ind_hdler(void* msg) {
 
 	obexs_id = ind->goep_conn_id;
 
-	//conns_id = srv_bt_cm_start_conn(TRUE, 0x1105, &(ind->bd_addr), (VMINT8*)ind->dev_name);
+#ifdef REGISTER_CONN
+	conns_id = srv_bt_cm_start_conn(TRUE, 0x1105, &(ind->bd_addr), (VMINT8*)ind->dev_name);
+#endif // REGISTER_CONN
 
 	opps_general_rsp(GOEP_AUTHORIZE_RES, ind->goep_conn_id, GOEP_STATUS_SUCCESS);
-
-
 }
 
 static void opps_connect_ind_handler(void* msg) {
@@ -144,7 +144,9 @@ static void opps_connect_ind_handler(void* msg) {
 
 	opps_general_rsp(GOEP_CONNECT_RES, ind->goep_conn_id, GOEP_STATUS_SUCCESS);
 
-	//srv_bt_cm_connect_ind(conns_id);
+#ifdef REGISTER_CONN
+	srv_bt_cm_connect_ind(conns_id);
+#endif // REGISTER_CONN
 }
 
 static void opps_push_ind_handler(void* msg) {
@@ -247,10 +249,10 @@ VMBOOL bt_opp_connect(VMUINT8* mac) {
 
 	PLATFORM_ASSERT();
 
-	//connc_id = srv_bt_cm_start_conn(FALSE, 0xfffd, mac8, NULL);
-	//DEBUG_PRINTF("connc_id = %d\n", connc_id);
-	//if (connc_id < 0)
-	//	return FALSE;
+#ifdef REGISTER_CONN
+	connc_id = srv_bt_cm_start_conn(FALSE, 0xfffd, mac8, NULL);
+	DEBUG_PRINTF("connc_id = %d\n", connc_id);
+#endif // REGISTER_CONN
 
 	oppc_send_connect_req(connc_id, buf_bt, 0xFFFF, mac8);
 }
@@ -260,8 +262,11 @@ VMBOOL bt_opp_deinit() {
 
 	mmi_bt_obex_event_hdlr_init();
 
-	//if (connc_id < 0)
-	//	return FALSE;
+#ifdef REGISTER_CONN
+	if (connc_id >= 0)
+		srv_bt_cm_stop_conn(connc_id);
 
-	//srv_bt_cm_stop_conn(connc_id);
+	if (conns_id >= 0)
+		srv_bt_cm_stop_conn(conns_id);
+#endif // REGISTER_CONN
 }
