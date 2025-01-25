@@ -79,11 +79,10 @@ static void print_hex(const char* s, unsigned char* h, int l) {
 	DEBUG_PRINTF("\n");
 }
 
-static VMWSTR name[128];
-static VMSTR mime[80] = { 0 };
+static VMUINT16 put_name[128];
+static VMSTR put_mime[80] = { 0 };
 static void oppc_connect_rsp_handler(void* msg) {
 	goep_connect_rsp_struct* rsp = (goep_connect_rsp_struct*)msg;
-	vm_ascii_to_ucs2(name, 128 * 2, "IpOverObex.txt");
 
 	if (rsp->rsp_code == GOEP_STATUS_SUCCESS)
 	{
@@ -96,11 +95,13 @@ static void oppc_connect_rsp_handler(void* msg) {
 		srv_bt_cm_connect_ind(rsp->req_id);
 #endif // REGISTER_CONN
 
-		srv_oppc_send_push_req(rsp->req_id, GOEP_FIRST_PKT, 0x7FFFFFFF, name + 1, mime, 0, 0);
+		srv_oppc_send_push_req(rsp->req_id, GOEP_FIRST_PKT, 0x7FFFFFFF, put_name, put_mime, 0, 0);
 	}
 	else
 	{
-		//srv_bt_cm_stop_conn(rsp->req_id);
+#ifdef REGISTER_CONN
+		srv_bt_cm_stop_conn(rsp->req_id);
+#endif // REGISTER_CONN
 	}
 }
 
@@ -114,7 +115,7 @@ static void oppc_push_rsp_handler(void* msg) {
 	}
 
 	obexc_id = rsp->goep_conn_id;
-	//srv_oppc_send_push_req(rsp->goep_conn_id, GOEP_NORMAL_PKT, 0x7FFFFFFF, name, mime, get_buf(), opc_mtu);
+	//srv_oppc_send_push_req(rsp->goep_conn_id, GOEP_NORMAL_PKT, 0x7FFFFFFF, put_name, put_mime, get_buf(), opc_mtu);
 }
 
 static void opps_general_rsp(VMUINT32 msg_id, VMUINT8 conn_id, VMUINT8 rsp_code) {
@@ -217,6 +218,13 @@ static void oppc_send_connect_req(VMINT conn_id, VMUINT8 buf, VMUINT16 buf_size,
 VMBOOL bt_opp_init() {
 	PLATFORM_ASSERT();
 
+	{
+		const char* name8 = "IpOverObex.txt";
+		int name8_len = strlen(name8) + 1;
+		for (int i = 0; i < name8_len; ++i)
+			put_name[i] = (((VMUINT16)name8[i]) << 8);
+	}
+
 	DEBUG_PRINTF("BT statud: %s\n", bt_pw_st[vm_btcm_get_power_status()]);
 
 	mmi_frm_set_protocol_event_handler(FIX_OBEX_EVENT(GOEP_REGISTER_SERVER_RSP), opp_msg_handler, 0);
@@ -238,8 +246,6 @@ VMBOOL bt_opp_init() {
 
 	buf_bt = vm_malloc(0xFFFF);
 }
-
-extern const unsigned char ProFont6x11[];
 
 VMBOOL bt_opp_connect(VMUINT8* mac) {
 	VMUINT8 mac8[8];
