@@ -158,7 +158,6 @@ VMBOOL bt_opp_preinit() {
 	INJECT2(srv_oppc_send_abort_req);
 	INJECT2(srv_oppc_send_disconnect_req);
 	INJECT(srv_oppc_send_begin);
-	//INJECT(srv_oppc_notify_app);
 
 	VMUINT32 j_construct_local_para = (thumb_bl((char*)srv_oppc_send_disconnect_req + 14) & ~0b11uL);
 	DEBUG_PRINT_INJECT(j_construct_local_para);

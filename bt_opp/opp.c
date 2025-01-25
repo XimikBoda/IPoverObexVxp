@@ -85,7 +85,7 @@ static VMWSTR name[128];
 static VMSTR mime[80] = { 0 };
 static void oppc_connect_rsp_handler(void* msg) {
 	goep_connect_rsp_struct* rsp = (goep_connect_rsp_struct*)msg;
-	vm_ascii_to_ucs2(name, 128*2, "IpOverObex.txt");
+	vm_ascii_to_ucs2(name, 128 * 2, "IpOverObex.txt");
 
 	if (rsp->rsp_code == GOEP_STATUS_SUCCESS)
 	{
@@ -134,27 +134,37 @@ static void opps_authorize_ind_hdler(void* msg) {
 
 	//conns_id = srv_bt_cm_start_conn(TRUE, 0x1105, &(ind->bd_addr), (VMINT8*)ind->dev_name);
 
-	DEBUG_PRINTF("opps_authorize_ind_hdler(obexs_id = %d)\n", obexs_id);
-
-	//if (conns_id < 0)
-	//{
-	//	opps_authorize_rsp(ind->goep_conn_id, GOEP_SERVICE_UNAVAILABLE);
-	//	return;
-	//}else
 	opps_general_rsp(GOEP_AUTHORIZE_RES, ind->goep_conn_id, GOEP_STATUS_SUCCESS);
 
 
 }
 
-static void opps_connect_ind_handler(void* msg)
-{
+static void opps_connect_ind_handler(void* msg) {
 	goep_connect_ind_struct* ind = (goep_connect_ind_struct*)msg;
-
-	DEBUG_PRINTF("opps_authorize_ind_hdler(obexs_id = %d)\n", ind->goep_conn_id);
 
 	opps_general_rsp(GOEP_CONNECT_RES, ind->goep_conn_id, GOEP_STATUS_SUCCESS);
 
 	//srv_bt_cm_connect_ind(conns_id);
+}
+
+static void opps_push_ind_handler(void* msg) {
+	goep_push_ind_struct* ind = (goep_push_ind_struct*)msg;
+
+	DEBUG_PRINTF("opps_push_ind_handler(%d)\n", ind->frag_len);
+
+	opps_general_rsp(GOEP_PUSH_RES, ind->goep_conn_id, GOEP_STATUS_SUCCESS);
+
+	switch (ind->pkt_type) {
+	case GOEP_FIRST_PKT:
+	case GOEP_SINGLE_PKT:
+		break;
+	case GOEP_NORMAL_PKT:
+		break;
+	case GOEP_FINAL_PKT:
+		break;
+	default:
+		break;
+	}
 }
 
 static VMUINT8 opp_event_handler(int msg_id, void* msg) {
@@ -171,6 +181,9 @@ static VMUINT8 opp_event_handler(int msg_id, void* msg) {
 		break;
 	case GOEP_CONNECT_IND:
 		opps_connect_ind_handler(msg);
+		break;
+	case GOEP_PUSH_IND:
+		opps_push_ind_handler(msg);
 		break;
 	}
 }
@@ -221,7 +234,7 @@ VMBOOL bt_opp_init() {
 	mmi_frm_set_protocol_event_handler(FIX_OBEX_EVENT(GOEP_AUTH_IND), opp_msg_handler, 0);
 	mmi_frm_set_protocol_event_handler(FIX_OBEX_EVENT(GOEP_OPP_SUPPORTED_FORMATS_IND), opp_msg_handler, 0);
 
-	buf_bt = vm_malloc(64 * 1024);
+	buf_bt = vm_malloc(0xFFFF);
 }
 
 extern const unsigned char ProFont6x11[];
@@ -239,7 +252,7 @@ VMBOOL bt_opp_connect(VMUINT8* mac) {
 	//if (connc_id < 0)
 	//	return FALSE;
 
-	//oppc_send_connect_req(connc_id, buf_bt, 64 * 1024, mac8);
+	oppc_send_connect_req(connc_id, buf_bt, 0xFFFF, mac8);
 }
 
 VMBOOL bt_opp_deinit() {
