@@ -193,13 +193,18 @@ static void opps_push_ind_handler(void* msg) {
 
 	{
 		memcpy((char*)receive_buf + receive_buf_pos, ind->frag_ptr, ind->frag_len);
-		send_buf_pos += ind->frag_len;
+		receive_buf_pos += ind->frag_len;
 
-		if (RECEIVE_BUF - send_buf_pos < opcs_mtu)
+		if (RECEIVE_BUF - receive_buf_pos < opcs_mtu)
 			wait_space_to_receive = TRUE;
 		else
 			opps_general_rsp(GOEP_PUSH_RES, ind->goep_conn_id, GOEP_STATUS_SUCCESS);
 	}
+}
+
+static void opp_disconnect_ind_handler(void* msg)
+{
+	goep_disconnect_ind_struct* goep_disconnect_ind = (goep_disconnect_ind_struct*)msg;
 }
 
 static VMUINT8 opp_event_handler(int msg_id, void* msg) {
@@ -219,6 +224,9 @@ static VMUINT8 opp_event_handler(int msg_id, void* msg) {
 		break;
 	case GOEP_PUSH_IND:
 		opps_push_ind_handler(msg);
+		break;
+	case GOEP_DISCONNECT_IND:
+		opp_disconnect_ind_handler(msg);
 		break;
 	}
 }
@@ -249,14 +257,7 @@ static void oppc_send_connect_req(VMINT conn_id, VMUINT8 buf, VMUINT16 buf_size,
 #define MALLOC_ASSERT(x) if (!x) return FALSE;
 
 VMBOOL bt_opp_init() {
-	{
-		const char* name8 = "IpOverObex.txt";
-		int name8_len = strlen(name8) + 1;
-		for (int i = 0; i < name8_len; ++i)
-			put_name[i] = (((VMUINT16)name8[i]) << 8);
-	}
-	//vm_ascii_to_ucs2(put_name, 128 * 2, "IpOverObex.txt");
-
+	vm_ascii_to_ucs2(put_name, 128 * 2, "IpOverObex.txt");
 
 	obex_send_buf = vm_malloc(OBEX_SEND_BUF);
 	MALLOC_ASSERT(obex_send_buf);
@@ -327,10 +328,10 @@ VMBOOL bt_opp_is_connected() {
 }
 
 void bt_opp_flush() {
-	if (wait_data_to_send)
+	if (wait_data_to_send && RECEIVE_BUF - receive_buf_pos > opcs_mtu)
 		send_from_buf();
 
-	if (wait_space_to_receive && RECEIVE_BUF - send_buf_pos < opcs_mtu) {
+	if (wait_space_to_receive && RECEIVE_BUF - send_buf_pos > opcs_mtu) {
 		wait_space_to_receive = FALSE;
 		opps_general_rsp(GOEP_PUSH_RES, obexc_id, GOEP_STATUS_SUCCESS);
 	}

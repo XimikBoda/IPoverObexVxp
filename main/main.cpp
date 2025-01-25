@@ -21,6 +21,13 @@ void handle_sysevt(VMINT message, VMINT param); // system events
 VMUINT8 my_mac[6] = { 0x1C, 0xBF, 0xC0, 0x2A, 0xD8, 0xEA }; // temporarily here for testing
 
 void key_handler(VMINT event, VMINT keycode) {
+	char tmp_buf[201] = {};
+	int r = bt_opp_read(tmp_buf, 201);
+
+	tmp_buf[r] = 0;
+	if(r)
+		console_put_str(tmp_buf);
+
 	vm_graphic_flush_layer(layer_hdl, 1);
 	if (keycode == VM_KEY_NUM1) {
 		bt_opp_deinit();

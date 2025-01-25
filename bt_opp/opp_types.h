@@ -209,6 +209,13 @@ typedef struct
 	VMUINT16 frag_len;
 } goep_push_ind_struct;
 
+typedef struct
+{
+	GOEP_MSG_COMM;
+
+	VMUINT8 req_id;
+} goep_disconnect_ind_struct;
+
 #define MAX_OBEX_PACKET_LENGTH 0x4000 
 
 typedef VMUINT8 (*MSGHandler) (void* local_buf, int src_mod, ilm_struct* ilm);
