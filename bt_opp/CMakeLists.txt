@@ -3,7 +3,7 @@ cmake_minimum_required (VERSION 3.8)
 set(PROJECT_NAME "bt_opp")
 
 add_library(${PROJECT_NAME} STATIC 
-    opp.c opp.h
+    opp.c opp.h opp_types.h
     opp_inject.c
 )
 

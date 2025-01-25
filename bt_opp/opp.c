@@ -4,6 +4,7 @@
 #include <console.h>
 #include <string.h>
 #include "opp.h"
+#include "opp_types.h"
 
 extern VMUINT32 bt_obex_events_base;
 #define FIX_OBEX_EVENT(x) ((x) + bt_obex_events_base)

@@ -2,6 +2,7 @@
 #include <console.h>
 #include <string.h>
 #include "opp.h"
+#include "opp_types.h"
 
 VMUINT32 bt_obex_events_base = 0;
 
