@@ -12,10 +12,18 @@ VMBOOL bt_opp_init();
 VMBOOL bt_opp_connect(VMUINT8* mac);
 VMBOOL bt_opp_deinit();
 
+VMBOOL bt_opp_is_connected();
+VMUINT32 bt_opp_write(const char* buf, VMUINT32 size); // For now only one stream
+VMUINT32 bt_opp_read(char* buf, VMUINT32 size); // For now only one stream
+void bt_opp_flush();
 
 
 
+//#define REGISTER_CONN 
 
+#define OBEX_SEND_BUF (10*1024) // Size of data in one obex package
+#define SEND_BUF (64*1024) // Size for data not yet sent
+#define RECEIVE_BUF (64*1024) // Size for receiving data
 
 #define DEBUG_PRINTF(...) cprintf(__VA_ARGS__)
 

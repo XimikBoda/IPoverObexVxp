@@ -5,6 +5,7 @@
 #include <vmstdlib.h>
 #include <vm4res.h>
 #include <vmres.h>
+#include <string.h>
 
 #include <console.h>
 #include <opp.h>
@@ -49,6 +50,10 @@ void vm_main(void) {
 	bt_opp_preinit();
 	bt_opp_init();
 	bt_opp_connect(my_mac);
+
+	const char* hi = "Hi from phone\n";
+	bt_opp_write(hi, strlen(hi) + 1);
+	bt_opp_flush();
 }
 
 void handle_sysevt(VMINT message, VMINT param) {

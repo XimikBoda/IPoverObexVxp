@@ -16,9 +16,20 @@ static VMINT32 obexc_id = -1;
 static VMINT32 obexs_id = -1;
 
 
-static VMINT32 opc_mtu = 0;
+static VMINT32 opcc_mtu = 0;
+static VMINT32 opcs_mtu = 0;
 
-static void* buf_bt = 0;
+static void* obex_send_buf = 0;
+static void* send_buf = 0;
+static void* receive_buf = 0;
+
+static VMINT32 send_buf_pos = 0;
+static VMINT32 receive_buf_pos = 0;
+
+static VMBOOL wait_data_to_send = 0;
+static VMBOOL wait_space_to_receive = 0;
+
+static VMBOOL is_connected = 0;
 
 static const char* bt_pw_st[4] = {
 	"On", "Off", "Switching on", "Switching off"
@@ -87,16 +98,18 @@ static void oppc_connect_rsp_handler(void* msg) {
 
 	if (rsp->rsp_code == GOEP_STATUS_SUCCESS)
 	{
-		if (rsp->peer_mru != 0 && rsp->peer_mru < MAX_OBEX_PACKET_LENGTH)
-			opc_mtu = rsp->peer_mru;
+		if (rsp->peer_mru != 0 && rsp->peer_mru < OBEX_SEND_BUF)
+			opcc_mtu = rsp->peer_mru;
 		else
-			opc_mtu = MAX_OBEX_PACKET_LENGTH;
+			opcc_mtu = OBEX_SEND_BUF;
 
 #ifdef REGISTER_CONN
 		srv_bt_cm_connect_ind(rsp->req_id);
 #endif // REGISTER_CONN
 
-		srv_oppc_send_push_req(rsp->req_id, GOEP_FIRST_PKT, 0x7FFFFFFF, put_name, put_mime, 0, 0);
+		obexc_id = rsp->goep_conn_id;
+
+		srv_oppc_send_push_req(obexc_id, GOEP_FIRST_PKT, 0x7FFFFFFF, put_name, put_mime, 0, 0);
 	}
 	else
 	{
@@ -104,6 +117,20 @@ static void oppc_connect_rsp_handler(void* msg) {
 		srv_bt_cm_stop_conn(rsp->req_id);
 #endif // REGISTER_CONN
 	}
+}
+
+static void send_from_buf() {
+	VMUINT32 size = send_buf_pos;
+	if (size > opcc_mtu)
+		size = opcc_mtu;
+
+	memcpy(obex_send_buf, send_buf, size);
+	memmove(send_buf, (char*)send_buf + size, size);
+	send_buf_pos -= size;
+
+	srv_oppc_send_push_req(obexc_id, GOEP_NORMAL_PKT, 0x7FFFFFFF, 0, put_name, obex_send_buf, size);
+	
+	wait_data_to_send = FALSE;
 }
 
 static void oppc_push_rsp_handler(void* msg) {
@@ -115,8 +142,11 @@ static void oppc_push_rsp_handler(void* msg) {
 		return;
 	}
 
-	obexc_id = rsp->goep_conn_id;
-	//srv_oppc_send_push_req(rsp->goep_conn_id, GOEP_NORMAL_PKT, 0x7FFFFFFF, put_name, put_mime, get_buf(), opc_mtu);
+
+	if (send_buf_pos) {
+		send_from_buf();
+	}else
+		wait_data_to_send = TRUE;
 }
 
 static void opps_general_rsp(VMUINT32 msg_id, VMUINT8 conn_id, VMUINT8 rsp_code) {
@@ -144,6 +174,10 @@ static void opps_authorize_ind_hdler(void* msg) {
 static void opps_connect_ind_handler(void* msg) {
 	goep_connect_ind_struct* ind = (goep_connect_ind_struct*)msg;
 
+	opcs_mtu = ind->peer_mru;
+
+	is_connected = TRUE;
+
 	opps_general_rsp(GOEP_CONNECT_RES, ind->goep_conn_id, GOEP_STATUS_SUCCESS);
 
 #ifdef REGISTER_CONN
@@ -151,23 +185,20 @@ static void opps_connect_ind_handler(void* msg) {
 #endif // REGISTER_CONN
 }
 
+
 static void opps_push_ind_handler(void* msg) {
 	goep_push_ind_struct* ind = (goep_push_ind_struct*)msg;
 
 	DEBUG_PRINTF("opps_push_ind_handler(%d)\n", ind->frag_len);
 
-	opps_general_rsp(GOEP_PUSH_RES, ind->goep_conn_id, GOEP_STATUS_SUCCESS);
+	{
+		memcpy((char*)receive_buf + receive_buf_pos, ind->frag_ptr, ind->frag_len);
+		send_buf_pos += ind->frag_len;
 
-	switch (ind->pkt_type) {
-	case GOEP_FIRST_PKT:
-	case GOEP_SINGLE_PKT:
-		break;
-	case GOEP_NORMAL_PKT:
-		break;
-	case GOEP_FINAL_PKT:
-		break;
-	default:
-		break;
+		if (RECEIVE_BUF - send_buf_pos < opcs_mtu)
+			wait_space_to_receive = TRUE;
+		else
+			opps_general_rsp(GOEP_PUSH_RES, ind->goep_conn_id, GOEP_STATUS_SUCCESS);
 	}
 }
 
@@ -215,16 +246,29 @@ static void oppc_send_connect_req(VMINT conn_id, VMUINT8 buf, VMUINT16 buf_size,
 	srv_opp_send_ilm(FIX_OBEX_EVENT(GOEP_CONNECT_REQ), req);
 }
 
+#define MALLOC_ASSERT(x) if (!x) return FALSE;
 
 VMBOOL bt_opp_init() {
-	PLATFORM_ASSERT();
-
 	{
 		const char* name8 = "IpOverObex.txt";
 		int name8_len = strlen(name8) + 1;
 		for (int i = 0; i < name8_len; ++i)
 			put_name[i] = (((VMUINT16)name8[i]) << 8);
 	}
+	//vm_ascii_to_ucs2(put_name, 128 * 2, "IpOverObex.txt");
+
+
+	obex_send_buf = vm_malloc(OBEX_SEND_BUF);
+	MALLOC_ASSERT(obex_send_buf);
+	send_buf = vm_malloc(SEND_BUF);
+	MALLOC_ASSERT(send_buf);
+	receive_buf = vm_malloc(RECEIVE_BUF);
+	MALLOC_ASSERT(receive_buf);
+	PLATFORM_ASSERT();
+
+
+	send_buf_pos = 0;
+	receive_buf_pos = 0;
 
 	DEBUG_PRINTF("BT statud: %s\n", bt_pw_st[vm_btcm_get_power_status()]);
 
@@ -245,7 +289,7 @@ VMBOOL bt_opp_init() {
 	mmi_frm_set_protocol_event_handler(FIX_OBEX_EVENT(GOEP_AUTH_IND), opp_msg_handler, 0);
 	mmi_frm_set_protocol_event_handler(FIX_OBEX_EVENT(GOEP_OPP_SUPPORTED_FORMATS_IND), opp_msg_handler, 0);
 
-	buf_bt = vm_malloc(0xFFFF);
+	return TRUE;
 }
 
 VMBOOL bt_opp_connect(VMUINT8* mac) {
@@ -261,13 +305,13 @@ VMBOOL bt_opp_connect(VMUINT8* mac) {
 	DEBUG_PRINTF("connc_id = %d\n", connc_id);
 #endif // REGISTER_CONN
 
-	oppc_send_connect_req(connc_id, buf_bt, 0xFFFF, mac8);
+	oppc_send_connect_req(connc_id, obex_send_buf, OBEX_SEND_BUF, mac8);
 }
 
 VMBOOL bt_opp_deinit() {
 	PLATFORM_ASSERT();
 
-	mmi_bt_obex_event_hdlr_init();
+	mmi_bt_obex_event_hdlr_init(); // return callbacks to standart
 
 #ifdef REGISTER_CONN
 	if (connc_id >= 0)
@@ -276,4 +320,50 @@ VMBOOL bt_opp_deinit() {
 	if (conns_id >= 0)
 		srv_bt_cm_stop_conn(conns_id);
 #endif // REGISTER_CONN
+}
+
+VMBOOL bt_opp_is_connected() {
+	return is_connected;
+}
+
+void bt_opp_flush() {
+	if (wait_data_to_send)
+		send_from_buf();
+
+	if (wait_space_to_receive && RECEIVE_BUF - send_buf_pos < opcs_mtu) {
+		wait_space_to_receive = FALSE;
+		opps_general_rsp(GOEP_PUSH_RES, obexc_id, GOEP_STATUS_SUCCESS);
+	}
+}
+
+VMUINT32 bt_opp_write(const char* buf, VMUINT32 size) {
+	VMUINT32 free_size = SEND_BUF - send_buf_pos;
+	if (size > free_size)
+		size = free_size;
+
+	memcpy((char*)send_buf + send_buf_pos, buf, size);
+	send_buf_pos += size;
+
+	if (send_buf_pos > opcc_mtu)
+		bt_opp_flush();
+
+	return size;
+}
+
+
+VMUINT32 bt_opp_read(char* buf, VMUINT32 size) {
+	VMUINT32 used_size = receive_buf_pos;
+	if (size > used_size)
+		size = used_size;
+
+	memcpy(buf, receive_buf, size);
+	if(used_size - size)
+		memmove(receive_buf, (char*)receive_buf + size, used_size - size);
+
+	receive_buf_pos -= size;
+
+	if (RECEIVE_BUF - receive_buf_pos > opcs_mtu)
+		bt_opp_flush();
+
+	return size;
 }
