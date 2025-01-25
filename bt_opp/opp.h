@@ -70,6 +70,45 @@ enum bt_obex_statuses {
 	GOEP_STATUS_SCO_REJECT		 = 25
 };
 
+enum bt_obex_responses {
+	GOEP_CREATED              = 0x21,
+	GOEP_ACCEPTED             = 0x22,
+	GOEP_NON_AUTHOR_INFO      = 0x23,
+	GOEP_NO_CONTENT           = 0x24,
+	GOEP_RESET_CONTENT        = 0x25,
+	GOEP_PARTIAL_CONTENT      = 0x26,
+	GOEP_MULTIPLE_CHOICES     = 0x30,
+	GOEP_MOVED_PERMANENT      = 0x31,
+	GOEP_MOVED_TEMPORARY      = 0x32,
+	GOEP_SEE_OTHER            = 0x33,
+	GOEP_NOT_MODIFIED         = 0x34,
+	GOEP_USE_PROXY            = 0x35,
+	GOEP_BAD_REQUEST          = 0x40,
+	GOEP_UNAUTHORIZED         = 0x41,
+	GOEP_PAYMENT_REQUIRED     = 0x42,
+	GOEP_FORBIDDEN            = 0x43,                             
+	GOEP_NOT_FOUND            = 0x44,
+	GOEP_METHOD_NOT_ALLOWED   = 0x45,
+	GOEP_NOT_ACCEPTABLE       = 0x46,
+	GOEP_PROXY_AUTHEN_REQ     = 0x47,
+	GOEP_REQUEST_TIME_OUT     = 0x48,
+	GOEP_CONFLICT             = 0x49,
+	GOEP_GONE                 = 0x4a,
+	GOEP_LENGTH_REQUIRED      = 0x4b,
+	GOEP_PRECONDITION_FAILED  = 0x4c,
+	GOEP_REQ_ENTITY_TOO_LARGE = 0x4d,
+	GOEP_REQ_URL_TOO_LARGE    = 0x4e,
+	GOEP_UNSUPPORT_MEDIA_TYPE = 0x4f,
+	GOEP_INTERNAL_SERVER_ERR  = 0x50,
+	GOEP_NOT_IMPLEMENTED      = 0x51,
+	GOEP_BAD_GATEWAY          = 0x52,
+	GOEP_SERVICE_UNAVAILABLE  = 0x53,
+	GOEP_GATEWAY_TIMEOUT      = 0x54,
+	GOEP_HTTP_VER_NO_SUPPORT  = 0x55,
+	GOEP_DATABASE_FULL        = 0x60,
+	GOEP_DATABASE_LOCKED      = 0x61,
+};
+
 enum opp_roles{
 	OPP_ROLE_CLIENT = 1,
 	OPP_ROLE_SERVER,
@@ -108,6 +147,14 @@ typedef struct
 	VMUINT8 realm_len;
 } goep_connect_req_struct;
 
+typedef struct
+{
+	VMUINT8 ref_count;
+	VMUINT16 msg_len;
+	VMUINT8 goep_conn_id;
+	VMUINT8 rsp_code;
+} goep_res_struct;
+
 #define GOEP_MSG_COMM \
     VMUINT8 ref_count; \
     VMUINT16 msg_len; \
@@ -132,6 +179,14 @@ typedef struct
 	VMUINT8 rsp_code;
 	VMUINT8 reason; 
 } goep_push_rsp_struct;
+
+typedef struct
+{
+	GOEP_MSG_COMM;
+
+	vm_srv_bt_cm_bt_addr bd_addr;
+	VMUINT8 dev_name[80];
+} goep_authorize_ind_struct;
 
 #define MAX_OBEX_PACKET_LENGTH 0x4000 
 
