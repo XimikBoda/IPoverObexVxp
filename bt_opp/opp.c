@@ -94,13 +94,13 @@ static void oppc_connect_rsp_handler(void* msg) {
 		else
 			opc_mtu = MAX_OBEX_PACKET_LENGTH;
 
-		srv_bt_cm_connect_ind(rsp->req_id);
+		//srv_bt_cm_connect_ind(rsp->req_id);
 
 		srv_oppc_send_push_req(rsp->req_id, GOEP_FIRST_PKT, 0x7FFFFFFF, name + 1, mime, 0, 0);
 	}
 	else
 	{
-		srv_bt_cm_stop_conn(rsp->req_id);
+		//srv_bt_cm_stop_conn(rsp->req_id);
 	}
 }
 
@@ -117,7 +117,15 @@ static void oppc_push_rsp_handler(void* msg) {
 	//srv_oppc_send_push_req(rsp->goep_conn_id, GOEP_NORMAL_PKT, 0x7FFFFFFF, name, mime, get_buf(), opc_mtu);
 }
 
-void opps_authorize_rsp(VMUINT8 conn_id, VMUINT8 rsp_code); //TODO: delete this
+static void opps_general_rsp(VMUINT32 msg_id, VMUINT8 conn_id, VMUINT8 rsp_code) {
+	goep_res_struct* res;
+	res = (goep_res_struct*)construct_local_para(sizeof(*res), 0);
+
+	res->goep_conn_id = conn_id;
+	res->rsp_code = rsp_code;
+
+	srv_opp_send_ilm(FIX_OBEX_EVENT(msg_id), res);
+}
 
 static void opps_authorize_ind_hdler(void* msg) {
 	goep_authorize_ind_struct* ind = (goep_authorize_ind_struct*)msg;
@@ -126,16 +134,27 @@ static void opps_authorize_ind_hdler(void* msg) {
 
 	//conns_id = srv_bt_cm_start_conn(TRUE, 0x1105, &(ind->bd_addr), (VMINT8*)ind->dev_name);
 
-	DEBUG_PRINTF("opps_authorize_ind_hdler(obexs_id = %d, conns_id = %d)\n", obexs_id, conns_id);
+	DEBUG_PRINTF("opps_authorize_ind_hdler(obexs_id = %d)\n", obexs_id);
 
 	//if (conns_id < 0)
 	//{
 	//	opps_authorize_rsp(ind->goep_conn_id, GOEP_SERVICE_UNAVAILABLE);
 	//	return;
 	//}else
-		opps_authorize_rsp(ind->goep_conn_id, GOEP_STATUS_SUCCESS);
+	opps_general_rsp(GOEP_AUTHORIZE_RES, ind->goep_conn_id, GOEP_STATUS_SUCCESS);
 
 
+}
+
+static void opps_connect_ind_handler(void* msg)
+{
+	goep_connect_ind_struct* ind = (goep_connect_ind_struct*)msg;
+
+	DEBUG_PRINTF("opps_authorize_ind_hdler(obexs_id = %d)\n", ind->goep_conn_id);
+
+	opps_general_rsp(GOEP_CONNECT_RES, ind->goep_conn_id, GOEP_STATUS_SUCCESS);
+
+	//srv_bt_cm_connect_ind(conns_id);
 }
 
 static VMUINT8 opp_event_handler(int msg_id, void* msg) {
@@ -149,6 +168,9 @@ static VMUINT8 opp_event_handler(int msg_id, void* msg) {
 		break;
 	case GOEP_AUTHORIZE_IND:
 		opps_authorize_ind_hdler(msg);
+		break;
+	case GOEP_CONNECT_IND:
+		opps_connect_ind_handler(msg);
 		break;
 	}
 }
@@ -174,16 +196,6 @@ static void oppc_send_connect_req(VMINT conn_id, VMUINT8 buf, VMUINT16 buf_size,
 	req->realm_len = 0;
 
 	srv_opp_send_ilm(FIX_OBEX_EVENT(GOEP_CONNECT_REQ), req);
-}
-
-void opps_authorize_rsp(VMUINT8 conn_id, VMUINT8 rsp_code) {
-	goep_res_struct* res;
-	res = (goep_res_struct*)construct_local_para(sizeof(*res), 0);
-
-	res->goep_conn_id = conn_id;
-	res->rsp_code = rsp_code;
-
-	srv_opp_send_ilm(FIX_OBEX_EVENT(GOEP_AUTHORIZE_RES), res);
 }
 
 
@@ -222,12 +234,12 @@ VMBOOL bt_opp_connect(VMUINT8* mac) {
 
 	PLATFORM_ASSERT();
 
-	connc_id = srv_bt_cm_start_conn(FALSE, 0xfffd, mac8, NULL);
-	DEBUG_PRINTF("connc_id = %d\n", connc_id);
-	if (connc_id < 0)
-		return FALSE;
+	//connc_id = srv_bt_cm_start_conn(FALSE, 0xfffd, mac8, NULL);
+	//DEBUG_PRINTF("connc_id = %d\n", connc_id);
+	//if (connc_id < 0)
+	//	return FALSE;
 
-	oppc_send_connect_req(connc_id, buf_bt, 64 * 1024, mac8);
+	//oppc_send_connect_req(connc_id, buf_bt, 64 * 1024, mac8);
 }
 
 VMBOOL bt_opp_deinit() {
@@ -235,8 +247,8 @@ VMBOOL bt_opp_deinit() {
 
 	mmi_bt_obex_event_hdlr_init();
 
-	if (connc_id < 0)
-		return FALSE;
+	//if (connc_id < 0)
+	//	return FALSE;
 
-	srv_bt_cm_stop_conn(connc_id);
+	//srv_bt_cm_stop_conn(connc_id);
 }

@@ -188,6 +188,16 @@ typedef struct
 	VMUINT8 dev_name[80];
 } goep_authorize_ind_struct;
 
+typedef struct
+{
+	GOEP_MSG_COMM;
+
+	vm_srv_bt_cm_bt_addr bd_addr;
+	VMUINT8 dev_name[80];
+	VMUINT16 peer_mru;
+	VMUINT32 cm_conn_id;
+} goep_connect_ind_struct;
+
 #define MAX_OBEX_PACKET_LENGTH 0x4000 
 
 typedef VMUINT8 (*MSGHandler) (void* local_buf, int src_mod, ilm_struct* ilm);
