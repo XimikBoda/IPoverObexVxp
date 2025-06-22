@@ -1,8 +1,9 @@
 #pragma once
+#include <stdlib.h>
 
 typedef int ssize_t;
 
-template<typename T, const ssize_t SIZE>
+template<typename T, ssize_t SIZE>
 class ItemsMngConst {
 	struct ItemsMng_el {
 		T el;
@@ -34,7 +35,7 @@ public:
 		return vec[i].active;
 	}
 	T& operator[](ssize_t i) {
-		if (i < 0 || i >= vec.size())
+		if (i < 0 || i >= vec_used)
 			abort();
 		return vec[i].el;
 	}
