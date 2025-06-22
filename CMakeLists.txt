@@ -23,5 +23,6 @@ add_subdirectory(vxp)
 add_subdirectory(run)
 add_subdirectory(bt_opp)
 add_subdirectory(console)
+add_subdirectory(IPtoStream)
 
 add_subdirectory(main)
