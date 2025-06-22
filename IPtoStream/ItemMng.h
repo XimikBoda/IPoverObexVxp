@@ -13,14 +13,21 @@ class ItemsMngConst {
 	ItemsMng_el vec[SIZE] = {};
 	ssize_t vec_used = 0;
 public:
-	ssize_t get_fist_free() {
+	ssize_t init_new_el() {
 		for (ssize_t i = 0; i < vec_used; ++i)
 			if (!vec[i].active) 
 				return i;
+
+		if (vec_used < SIZE) {
+			ssize_t id = vec_used;
+			vec_used++; 
+			vec[id].active = true;;
+			return id;
+		}
 		return -1;
 	}
 	ssize_t push(const T& el) {
-		int32_t i = get_fist_free();
+		int32_t i = init_new_el();
 		if (i == -1)
 			return -1;
 

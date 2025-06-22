@@ -103,6 +103,8 @@ static void oppc_connect_rsp_handler(void* msg) {
 		else
 			opcc_mtu = OBEX_SEND_BUF;
 
+		cprintf("opcc_mtu: %d\n", opcc_mtu);
+
 #ifdef REGISTER_CONN
 		srv_bt_cm_connect_ind(rsp->req_id);
 #endif // REGISTER_CONN
@@ -337,8 +339,12 @@ void bt_opp_flush() {
 	}
 }
 
-VMUINT32 bt_opp_write(const char* buf, VMUINT32 size) {
-	VMUINT32 free_size = SEND_BUF - send_buf_pos;
+VMUINT32 bt_opp_get_free_size() {
+	return SEND_BUF - send_buf_pos;
+}
+
+VMUINT32 bt_opp_write(const void* buf, VMUINT32 size) {
+	VMUINT32 free_size = bt_opp_get_free_size();
 	if (size > free_size)
 		size = free_size;
 
@@ -352,7 +358,7 @@ VMUINT32 bt_opp_write(const char* buf, VMUINT32 size) {
 }
 
 
-VMUINT32 bt_opp_read(char* buf, VMUINT32 size) {
+VMUINT32 bt_opp_read(void* buf, VMUINT32 size) {
 	VMUINT32 used_size = receive_buf_pos;
 	if (size > used_size)
 		size = used_size;

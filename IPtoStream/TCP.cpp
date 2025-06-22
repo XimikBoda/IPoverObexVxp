@@ -11,15 +11,17 @@ bool TCP::make_connect_packet(int id) {
 	TCP_sock& tcpsock = TCPsocks[id];
 
 	writer.init(type_id);
+	writer.putUInt8(Connect);
 	writer.putString(tcpsock.host);
 	writer.putUInt16(tcpsock.port);
-	//writer.
+	writer.send();
 
 	return true;
 }
 
+#include <console.h>
 int TCP::connect(const char* host, uint16_t port, std::function<void(int handle, int event)> callback) {
-	int id = TCPsocks.get_fist_free();
+	int id = TCPsocks.init_new_el();
 	if (id == -1)
 		return -1;
 

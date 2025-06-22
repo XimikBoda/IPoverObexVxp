@@ -7,6 +7,7 @@ const size_t PM_max_size = 1024;
 class PacketMaker {
 	uint8_t vec[PM_max_size] = {}; //TODO add protection of overflow
 	size_t size = 0;
+	bool done = true;
 
 	void update_size();
 
@@ -21,4 +22,6 @@ public:
 	void putVarInt(int32_t val);
 
 	void putString(const char* str);
+
+	void send();
 };
