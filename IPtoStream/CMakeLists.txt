@@ -4,6 +4,8 @@ set(PROJECT_NAME "IPtoStream")
 
 add_library(${PROJECT_NAME} STATIC 
     ItemMng.h
+    IPtoStream.h IPtoStream.cpp
+    TCP.h TCP.cpp
     PacketMaker.h PacketMaker.cpp
 )
 

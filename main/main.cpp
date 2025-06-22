@@ -10,6 +10,7 @@
 
 #include <console.h>
 #include <opp.h>
+#include <IPtoStream.h>
 
 VMINT		layer_hdl[1];	// layer handle array. 
 VMUINT8* layer_buf = 0;
@@ -59,9 +60,14 @@ void vm_main(void) {
 	bt_opp_init();
 	bt_opp_connect(my_mac);
 
-	const char* hi = "Hi from phone\n";
-	bt_opp_write(hi, strlen(hi) + 1);
-	bt_opp_flush();
+	//const char* hi = "Hi from phone\n";
+	//bt_opp_write(hi, strlen(hi) + 1);
+	//bt_opp_flush();
+
+	ipts.tcp.connect("8.8.8.8", 80, 
+		[](int h, int e) { 
+			cprintf("tcp_callback(%d, %d)\n", h, e); 
+		});
 
 	vm_create_timer(100, [](int tid) { vm_graphic_flush_layer(layer_hdl, 1); });
 }
