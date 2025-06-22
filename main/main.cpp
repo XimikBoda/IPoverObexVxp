@@ -5,6 +5,7 @@
 #include <vmstdlib.h>
 #include <vm4res.h>
 #include <vmres.h>
+#include <vmtimer.h>
 #include <string.h>
 
 #include <console.h>
@@ -25,7 +26,7 @@ void key_handler(VMINT event, VMINT keycode) {
 	int r = bt_opp_read(tmp_buf, 201);
 
 	tmp_buf[r] = 0;
-	if(r)
+	if (r)
 		console_put_str(tmp_buf);
 
 	vm_graphic_flush_layer(layer_hdl, 1);
@@ -47,7 +48,7 @@ void vm_main(void) {
 	layer_hdl[0] = vm_graphic_create_layer(0, 0, screen_w, screen_h, -1);
 	layer_buf = vm_graphic_get_layer_buffer(layer_hdl[0]);
 	vm_graphic_set_clip(0, 0, screen_w, screen_h);
-	
+
 	vm_reg_sysevt_callback(handle_sysevt);
 	vm_reg_keyboard_callback(key_handler);
 
@@ -61,6 +62,8 @@ void vm_main(void) {
 	const char* hi = "Hi from phone\n";
 	bt_opp_write(hi, strlen(hi) + 1);
 	bt_opp_flush();
+
+	vm_create_timer(100, [](int tid) { vm_graphic_flush_layer(layer_hdl, 1); });
 }
 
 void handle_sysevt(VMINT message, VMINT param) {
@@ -80,17 +83,17 @@ void handle_sysevt(VMINT message, VMINT param) {
 	switch (message) {
 	case VM_MSG_CREATE:
 	case VM_MSG_ACTIVE:
-		
+
 		break;
-		
+
 	case VM_MSG_PAINT:
 		break;
-		
-	case VM_MSG_INACTIVE:		
-		break;	
+
+	case VM_MSG_INACTIVE:
+		break;
 	case VM_MSG_QUIT:
 		bt_opp_deinit();
-		break;	
+		break;
 	}
 #endif
 }
