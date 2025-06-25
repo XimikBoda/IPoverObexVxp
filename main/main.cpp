@@ -64,7 +64,7 @@ void vm_main(void) {
 	//bt_opp_write(hi, strlen(hi) + 1);
 	//bt_opp_flush();
 
-	ipts.tcp.connect("8.8.8.8", 80, 
+	ipts.tcp.connect("www.google.com", 80, 
 		[](int h, int e) { 
 			cprintf("tcp_callback(%d, %d)\n", h, e); 
 		});

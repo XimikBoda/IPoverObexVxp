@@ -178,6 +178,8 @@ static void opps_connect_ind_handler(void* msg) {
 
 	opcs_mtu = ind->peer_mru;
 
+	cprintf("opcs_mtu: %d\n", opcs_mtu);
+
 	is_connected = TRUE;
 
 	opps_general_rsp(GOEP_CONNECT_RES, ind->goep_conn_id, GOEP_STATUS_SUCCESS);
@@ -335,7 +337,7 @@ void bt_opp_flush() {
 
 	if (wait_space_to_receive && RECEIVE_BUF - send_buf_pos > opcs_mtu) {
 		wait_space_to_receive = FALSE;
-		opps_general_rsp(GOEP_PUSH_RES, obexc_id, GOEP_STATUS_SUCCESS);
+		opps_general_rsp(GOEP_PUSH_RES, obexs_id, GOEP_STATUS_SUCCESS);
 	}
 }
 
