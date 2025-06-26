@@ -1,15 +1,58 @@
 #pragma once
 #include <stdint.h>
-#include <functional>
 
 #include "ItemMng.h"
 
-typedef class IPtoStream;
+//#define USE_STD_FUNCTION
+
+enum TCPEvent : uint8_t {
+	Connected,
+	Disconected,
+	HostNotFound,
+	Error
+};
+
+#ifdef  USE_STD_FUNCTION
+#include <functional>
+typedef std::function<void(int id, TCPEvent event)> tcp_callback_t;
+#else
+typedef void (*tcp_callback_t)(int id, TCPEvent event);
+#endif //  USE_STD_FUNCTION
+
+
+class TCP_sock {
+public:
+	char host[256] = {};
+	uint16_t port = 0;
+	uint16_t id = 0;
+	tcp_callback_t callback = 0;
+
+	class TCP* owner;
+
+	enum TCPStatus : uint8_t {
+		None,
+		ConnectPending,
+		ConnectSent,
+		Connected,
+		Error
+	};
+
+	TCPStatus status = None;
+
+	void sendCallbackEvent(TCPEvent event);
+
+	bool make_connect_packet();
+
+	void parseTCPConnectPacket();
+	void parsePacket();
+	void update();
+};
 
 class TCP {
 	friend class IPtoStream;
+	friend class TCP_sock;
 
-	IPtoStream &owner;
+	class IPtoStream &owner;
 	uint8_t my_type;
 
 	enum TCPAct : uint8_t {
@@ -27,17 +70,11 @@ class TCP {
 
 	TCP(IPtoStream &owner_, uint8_t type);
 
-	class TCP_sock {
-	public:
-		char host[256] = {};
-		uint16_t port = 0;
-	};
-
 	ItemsMngConst<TCP_sock, 10> TCPsocks;
 
 
-	bool make_connect_packet(int id);
+	void parsePacket();
 
 public:
-	int connect(const char* host, uint16_t port, std::function<void(int handle, int event)> callback); //TODO add also raw callback without std::function
+	int connect(const char* host, uint16_t port, tcp_callback_t callback);
 };

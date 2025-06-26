@@ -15,8 +15,10 @@ class ItemsMngConst {
 public:
 	ssize_t init_new_el() {
 		for (ssize_t i = 0; i < vec_used; ++i)
-			if (!vec[i].active) 
+			if (!vec[i].active) {
+				vec[i].active = true;;
 				return i;
+			}
 
 		if (vec_used < SIZE) {
 			ssize_t id = vec_used;

@@ -4,16 +4,25 @@
 
 IPtoStream ipts;
 
-uint16_t IPtoStream::getType(uint16_t type_id) {
-	return type_id >> bits_for_type;
-}
+void IPtoStream::parsePacket() {
+	uint16_t type_id = reader.readUInt16();
+	type = reader.getType(type_id);
+	id = reader.getId(type_id);
 
-uint16_t IPtoStream::getId(uint16_t type_id) {
-	return type_id & ((1 << bits_for_type) - 1);
-}
+	switch (type) {
+	case TCP_T:
+		tcp.parsePacket();
+		break;
+	default:
+		break;
+	}
 
-uint16_t IPtoStream::makeTypeId(uint16_t type, uint16_t id) {
-	return (type << bits_for_type) | (id & ((1 << bits_for_type) - 1));
+	reader.end();
 }
 
 inline IPtoStream::IPtoStream() : tcp(*this, TCP_T) {}
+
+void IPtoStream::update() {
+	if (reader.check_receive())
+		parsePacket();
+}

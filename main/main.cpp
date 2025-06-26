@@ -23,13 +23,7 @@ void handle_sysevt(VMINT message, VMINT param); // system events
 VMUINT8 my_mac[6] = { 0x1C, 0xBF, 0xC0, 0x2A, 0xD8, 0xEA }; // temporarily here for testing
 
 void key_handler(VMINT event, VMINT keycode) {
-	char tmp_buf[201] = {};
-	int r = bt_opp_read(tmp_buf, 201);
-
-	tmp_buf[r] = 0;
-	if (r)
-		console_put_str(tmp_buf);
-
+	bt_opp_flush();
 	vm_graphic_flush_layer(layer_hdl, 1);
 	if (keycode == VM_KEY_NUM1) {
 		bt_opp_deinit();
@@ -65,11 +59,19 @@ void vm_main(void) {
 	//bt_opp_flush();
 
 	ipts.tcp.connect("www.google.com", 80, 
-		[](int h, int e) { 
-			cprintf("tcp_callback(%d, %d)\n", h, e); 
+		[](int id, TCPEvent event) {
+			const char* names[4] = {
+				"Connected", "Disconected",
+				"HostNotFound", "Error",
+			};
+
+			cprintf("tcp_callback(%d, %d (%s))\n", id, event, names[event]);
 		});
 
-	vm_create_timer(100, [](int tid) { vm_graphic_flush_layer(layer_hdl, 1); });
+	vm_create_timer(100, [](int tid) { 
+		ipts.update();
+		vm_graphic_flush_layer(layer_hdl, 1); 
+		});
 }
 
 void handle_sysevt(VMINT message, VMINT param) {

@@ -5,6 +5,12 @@
 static const int SEGMENT_BITS = 0x7F;
 static const int CONTINUE_BIT = 0x80;
 
+static const uint8_t bits_for_type = 11;
+
+uint16_t PacketMaker::makeTypeId(uint16_t type, uint16_t id) {
+	return (type << bits_for_type) | (id & ((1 << bits_for_type) - 1));
+}
+
 void PacketMaker::update_size() {
 	uint16_t size16 = size;
 	memcpy(vec, &size16, 2);

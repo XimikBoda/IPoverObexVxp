@@ -12,6 +12,8 @@ class PacketMaker {
 	void update_size();
 
 public:
+	static uint16_t makeTypeId(uint16_t type, uint16_t id);
+
 	void init(uint16_t type_id);
 
 	void putBuf(const void* buf, size_t len);
