@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include "PacketMaker.h"
+#include "PacketReader.h"
 #include "TCP.h"
 
 class IPtoStream {
@@ -13,6 +14,8 @@ class IPtoStream {
 	};
 
 	PacketMaker writer;
+	PacketReader reader;
+
 
 	uint16_t getType(uint16_t type_id);
 	uint16_t getId(uint16_t type_id);
