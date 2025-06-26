@@ -376,3 +376,26 @@ VMUINT32 bt_opp_read(void* buf, VMUINT32 size) {
 
 	return size;
 }
+
+void bt_opp_set_as_readed(VMUINT32 size) {
+	VMUINT32 used_size = receive_buf_pos;
+	if (size > used_size)
+		abort();
+
+	if (used_size - size)
+		memmove(receive_buf, (char*)receive_buf + size, used_size - size);
+
+	receive_buf_pos -= size;
+
+	if (RECEIVE_BUF - receive_buf_pos > opcs_mtu)
+		bt_opp_flush();
+}
+
+void* bt_opp_get_receive_buf() {
+	return receive_buf;
+}
+
+VMUINT32 bt_opp_get_receive_size() {
+	return receive_buf_pos;
+}
+

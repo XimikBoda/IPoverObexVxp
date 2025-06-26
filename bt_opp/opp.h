@@ -16,6 +16,9 @@ VMBOOL bt_opp_is_connected();
 VMUINT32 bt_opp_get_free_size();
 VMUINT32 bt_opp_write(const void* buf, VMUINT32 size); // For now only one stream
 VMUINT32 bt_opp_read(void* buf, VMUINT32 size); // For now only one stream
+void	 bt_opp_set_as_readed(VMUINT32 size); // For now only one stream
+void*	 bt_opp_get_receive_buf();
+VMUINT32 bt_opp_get_receive_size();
 void bt_opp_flush();
 
 
