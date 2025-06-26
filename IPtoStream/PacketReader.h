@@ -23,5 +23,7 @@ public:
 	uint32_t readVarInt();
 	//std::string readString();
 
+	size_t get_size_to_end();
+
 	void end();
 };

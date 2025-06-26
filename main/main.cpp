@@ -18,6 +18,8 @@ VMUINT8* layer_buf = 0;
 VMINT screen_w = 0;
 VMINT screen_h = 0;
 
+int tcp_id = -1;
+
 void handle_sysevt(VMINT message, VMINT param); // system events 
 
 VMUINT8 my_mac[6] = { 0x1C, 0xBF, 0xC0, 0x2A, 0xD8, 0xEA }; // temporarily here for testing
@@ -25,9 +27,11 @@ VMUINT8 my_mac[6] = { 0x1C, 0xBF, 0xC0, 0x2A, 0xD8, 0xEA }; // temporarily here 
 void key_handler(VMINT event, VMINT keycode) {
 	bt_opp_flush();
 	vm_graphic_flush_layer(layer_hdl, 1);
-	if (keycode == VM_KEY_NUM1) {
-		bt_opp_deinit();
-		vm_exit_app();
+	if (event == VM_KEY_EVENT_UP) {
+		if (keycode == VM_KEY_NUM1) {
+			bt_opp_deinit();
+			vm_exit_app();
+		}
 	}
 }
 
@@ -56,22 +60,36 @@ void vm_main(void) {
 
 	cprintf("IPoverObexVxp Test TCP\n");
 
-	int id = ipts.tcp.connect("google.com", 80, 
+	tcp_id = ipts.tcp.connect("google.com", 80,
 		[](int id, TCPEvent event) {
 			const char* names[4] = {
-				"Connected", "Disconected",
+				"Connected", "Disconnected",
 				"HostNotFound", "Error",
 			};
 
 			cprintf("tcp_callback(%d, %d (%s))\n", id, event, names[event]);
 		});
 
-	const char* minimal_http = "GET / HTTP/1.0\r\n\r\n";
-	ipts.tcp.write(id, minimal_http, strlen(minimal_http));
+	const char* minimal_http = "POST /404 HTTP/1.0\r\n\r\n";
+	ipts.tcp.write(tcp_id, minimal_http, strlen(minimal_http));
 
-	vm_create_timer(100, [](int tid) { 
+	vm_create_timer(100, [](int tid) {
 		ipts.update();
-		vm_graphic_flush_layer(layer_hdl, 1); 
+
+		while (true) {
+			char buf[101] = {};
+
+			size_t size = ipts.tcp.read(tcp_id, buf, 100);
+
+			if (size > 0) {
+				buf[size] = 0;
+
+				cprintf("%s", buf);
+			}
+			else
+				break;
+		}
+		vm_graphic_flush_layer(layer_hdl, 1);
 		});
 }
 

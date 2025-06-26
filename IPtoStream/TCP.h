@@ -7,7 +7,7 @@
 
 enum TCPEvent : uint8_t {
 	Connected,
-	Disconected,
+	Disconnected,
 	HostNotFound,
 	Error
 };
@@ -34,7 +34,10 @@ public:
 
 	uint8_t receive_buf[tcp_receive_buf_size] = {};
 	uint8_t send_buf[tcp_send_buf_size] = {};
+	size_t receive_buf_pos = 0;
 	size_t send_buf_pos = 0;
+
+	size_t receive_count = 0;
 
 	class TCP* owner;
 
@@ -43,6 +46,7 @@ public:
 		ConnectPending,
 		ConnectSent,
 		Connected,
+		Disconnected,
 		Error
 	};
 
@@ -52,13 +56,17 @@ public:
 	void send();
 
 	bool make_connect_packet();
+	bool make_receive_packet();
 
 	void parseTCPConnectPacket();
+	void parseTCPSendPacket();
+	void parseTCPReceivePacket();
 	void parsePacket();
 	void update(); // small inform packets
 	void updateData(); // data packets
 
 	ssize_t write(const void* buf, size_t size);
+	ssize_t read(void* buf, size_t size);
 };
 
 class TCP {
@@ -71,6 +79,7 @@ class TCP {
 	enum TCPAct : uint8_t {
 		Connect,
 		Send,
+		Receive,
 		Disconnect
 	};
 
@@ -79,7 +88,8 @@ class TCP {
 		NotReady,
 		Disconnected,
 		Error,
-		Busy
+		Busy,
+		NameNotResolved
 	};
 
 	TCP(IPtoStream &owner_, uint8_t type);
@@ -95,4 +105,5 @@ class TCP {
 public:
 	int connect(const char* host, uint16_t port, tcp_callback_t callback);
 	ssize_t write(int id, const void* buf, size_t size);
+	ssize_t read(int id, void* buf, size_t size);
 };

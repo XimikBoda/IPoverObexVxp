@@ -24,8 +24,9 @@ bool PacketReader::check_receive() {
 	if (!receive_buf)
 		return false;
 
+	pos = 0;
 	packet_buf_size = readUInt16();
-	if (packet_buf_size < receive_buf_size)
+	if (packet_buf_size > receive_buf_size)
 		return false;
 
 	return true;
@@ -67,6 +68,10 @@ uint32_t PacketReader::readVarInt() {
 	}
 
 	return value;
+}
+
+size_t PacketReader::get_size_to_end() {
+	return packet_buf_size - pos;
 }
 
 void PacketReader::end() {

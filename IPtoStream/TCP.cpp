@@ -1,6 +1,7 @@
 #include "TCP.h"
 #include "IPtoStream.h"
 #include <cstring>
+#include <console.h>
 
 TCP::TCP(IPtoStream& owner_, uint8_t type) : owner(owner_), my_type(type) {}
 
@@ -45,6 +46,21 @@ bool TCP_sock::make_connect_packet() {
 	writer.putUInt8(TCP::Connect);
 	writer.putString(host);
 	writer.putUInt16(port);
+	writer.putVarInt(tcp_receive_buf_size);
+	writer.send();
+
+	return true;
+}
+
+bool TCP_sock::make_receive_packet() {
+	auto& writer = owner->owner.writer;
+
+	if (!writer.available())
+		return false;
+
+	writer.init(type_id);
+	writer.putUInt8(TCP::Receive);
+	writer.putVarInt(receive_count);
 	writer.send();
 
 	return true;
@@ -63,11 +79,65 @@ void TCP_sock::parseTCPConnectPacket() {
 		else
 			status = TCPStatus::Error;
 		break;
-	case TCP::NotReady:
 	case TCP::Disconnected:
+		status = TCPStatus::Disconnected;
+		sendCallbackEvent(TCPEvent::Disconnected);
+		break;
+	case TCP::NameNotResolved:
+		status = TCPStatus::Error;
+		sendCallbackEvent(TCPEvent::HostNotFound);
+		break;
+	case TCP::NotReady:
 	case TCP::Error:
 	case TCP::Busy:
 	default:
+		status = TCPStatus::Error;
+		sendCallbackEvent(TCPEvent::Error);
+		break;
+	}
+}
+
+void TCP_sock::parseTCPSendPacket() {
+	TCP::RspStatus rstatus = (TCP::RspStatus)owner->owner.reader.readUInt8();
+	size_t sended = (TCP::RspStatus)owner->owner.reader.readVarInt(); //TODO
+
+	switch (rstatus)
+	{
+	//case TCP::NotReady: //TODO
+	case TCP::Disconnected:
+		status = TCPStatus::Disconnected;
+		sendCallbackEvent(TCPEvent::Disconnected);
+		break;
+	case TCP::Error:
+	case TCP::Busy:
+		status = TCPStatus::Error;
+		sendCallbackEvent(TCPEvent::Error);
+		break;
+	}
+}
+
+void TCP_sock::parseTCPReceivePacket() {
+	PacketReader& reader = owner->owner.reader;
+	TCP::RspStatus rstatus = (TCP::RspStatus)reader.readUInt8();
+
+	size_t size = reader.get_size_to_end();
+	size_t free_size = tcp_receive_buf_size - receive_buf_pos;
+
+	if (size > free_size)
+		abort();
+
+	reader.read(receive_buf + receive_buf_pos, size);
+	receive_buf_pos += size;
+
+	switch (rstatus)
+	{
+		//case TCP::NotReady: //TODO
+	case TCP::Disconnected:
+		status = TCPStatus::Disconnected;
+		sendCallbackEvent(TCPEvent::Disconnected);
+		break;
+	case TCP::Error:
+	case TCP::Busy:
 		status = TCPStatus::Error;
 		sendCallbackEvent(TCPEvent::Error);
 		break;
@@ -80,6 +150,12 @@ void TCP_sock::parsePacket() {
 	switch (act) {
 	case TCP::Connect:
 		parseTCPConnectPacket();
+		break;
+	case TCP::Send:
+		parseTCPSendPacket();
+		break;
+	case TCP::Receive:
+		parseTCPReceivePacket();
 		break;
 	}
 }
@@ -100,6 +176,10 @@ void TCP_sock::update() {
 	default:
 		break;
 	}
+
+	if (receive_count)
+		if (make_receive_packet())
+			receive_count = 0;
 }
 
 void TCP_sock::updateData() {
@@ -122,6 +202,31 @@ ssize_t TCP_sock::write(const void* buf, size_t size) {
 	send_buf_pos += size;
 
 	updateData();
+
+	return size;
+}
+
+ssize_t TCP_sock::read(void* buf, size_t size) {
+	int used_size = receive_buf_pos;
+	if (size > used_size)
+		size = used_size;
+
+	if (status == TCPStatus::Error)
+		return -2;
+
+	if (size == 0)
+		return 0;
+
+	memcpy(buf, receive_buf, size);
+
+	if (used_size - size)
+		memmove(receive_buf, receive_buf + size, used_size - size);
+
+	receive_buf_pos -= size;
+
+	receive_count += size;
+
+	//update();
 
 	return size;
 }
@@ -153,7 +258,7 @@ int TCP::connect(const char* host, uint16_t port, tcp_callback_t callback) {
 	strcpy(tcpsock.host, host);
 	tcpsock.port = port;
 	tcpsock.id = id;
-	tcpsock.id = owner.writer.makeTypeId(my_type, id);
+	tcpsock.type_id = owner.writer.makeTypeId(my_type, id);
 	tcpsock.owner = this;
 	tcpsock.status = TCP_sock::ConnectPending;
 	tcpsock.callback = callback;
@@ -166,6 +271,13 @@ int TCP::connect(const char* host, uint16_t port, tcp_callback_t callback) {
 ssize_t TCP::write(int id, const void* buf, size_t size) {
 	if (TCPsocks.is_active(id))
 		return TCPsocks[id].write(buf, size);
+
+	return -1; //todo
+}
+
+ssize_t TCP::read(int id, void* buf, size_t size) {
+	if (TCPsocks.is_active(id))
+		return TCPsocks[id].read(buf, size);
 
 	return -1; //todo
 }
