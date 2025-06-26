@@ -26,4 +26,8 @@ public:
 	void putString(const char* str);
 
 	void send();
+
+	bool available();
+
+	size_t free_size();
 };

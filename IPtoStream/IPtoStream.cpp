@@ -25,4 +25,9 @@ inline IPtoStream::IPtoStream() : tcp(*this, TCP_T) {}
 void IPtoStream::update() {
 	if (reader.check_receive())
 		parsePacket();
+
+
+	tcp.update();
+
+	tcp.updateData();
 }

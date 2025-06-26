@@ -54,11 +54,9 @@ void vm_main(void) {
 	bt_opp_init();
 	bt_opp_connect(my_mac);
 
-	//const char* hi = "Hi from phone\n";
-	//bt_opp_write(hi, strlen(hi) + 1);
-	//bt_opp_flush();
+	cprintf("IPoverObexVxp Test TCP\n");
 
-	ipts.tcp.connect("www.google.com", 80, 
+	int id = ipts.tcp.connect("google.com", 80, 
 		[](int id, TCPEvent event) {
 			const char* names[4] = {
 				"Connected", "Disconected",
@@ -67,6 +65,9 @@ void vm_main(void) {
 
 			cprintf("tcp_callback(%d, %d (%s))\n", id, event, names[event]);
 		});
+
+	const char* minimal_http = "GET / HTTP/1.0\r\n\r\n";
+	ipts.tcp.write(id, minimal_http, strlen(minimal_http));
 
 	vm_create_timer(100, [](int tid) { 
 		ipts.update();

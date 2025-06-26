@@ -69,3 +69,11 @@ void PacketMaker::send() {
 
 	done = true;
 }
+
+bool PacketMaker::available() {
+	return done;
+}
+
+size_t PacketMaker::free_size() {
+	return PM_max_size - size;
+}

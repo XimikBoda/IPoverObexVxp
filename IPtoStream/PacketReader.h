@@ -4,7 +4,7 @@
 
 
 class PacketReader {
-	void* receive_buf = 0;
+	uint8_t* receive_buf = 0;
 	size_t pos = 0;
 
 	size_t receive_buf_size = 0;
