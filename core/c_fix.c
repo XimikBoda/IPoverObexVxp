@@ -13,7 +13,12 @@ void _exit(int c) {
 	f();
 }
 void abort() {
-	cprintf("ERROR: _abort()\n");
+	unsigned int return_address = __builtin_return_address(0);
+	cprintf("ERROR: _abort() (from %#08x)\n", return_address);
+	cprintf("_abort() -> %#08x\n", abort);
+	cprintf("_abort() - ret = %#08x\n", (unsigned int)abort - return_address);
+	cprintf("ret - _abort() = %#08x\n", return_address - (unsigned int)abort);
+
 	_exit(0);
 }
 

@@ -245,6 +245,7 @@ VMBOOL bt_opp_connect(VMUINT8* mac);
 VMBOOL bt_opp_deinit();
 
 #define DEBUG_PRINTF(...) cprintf(__VA_ARGS__)
+//#define DEBUG_PRINTF(...) 
 
 #ifdef WIN32
 #define PLATFORM_ASSERT() DEBUG_PRINTF("WIN32 is not support for now\n"); return FALSE;

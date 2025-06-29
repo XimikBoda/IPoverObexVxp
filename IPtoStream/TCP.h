@@ -47,7 +47,8 @@ public:
 		ConnectSent,
 		Connected,
 		Disconnected,
-		Error
+		Error,
+		ClosingPending
 	};
 
 	TCPStatus status = None;
@@ -57,6 +58,7 @@ public:
 
 	bool make_connect_packet();
 	bool make_receive_packet();
+	bool make_disconnect_packet();
 
 	void parseTCPConnectPacket();
 	void parseTCPSendPacket();
@@ -67,6 +69,7 @@ public:
 
 	ssize_t write(const void* buf, size_t size);
 	ssize_t read(void* buf, size_t size);
+	void close();
 };
 
 class TCP {
@@ -106,4 +109,5 @@ public:
 	int connect(const char* host, uint16_t port, tcp_callback_t callback);
 	ssize_t write(int id, const void* buf, size_t size);
 	ssize_t read(int id, void* buf, size_t size);
+	void close(int id);
 };

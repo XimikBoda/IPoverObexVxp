@@ -131,7 +131,7 @@ static void send_from_buf() {
 	send_buf_pos -= size;
 
 	srv_oppc_send_push_req(obexc_id, GOEP_NORMAL_PKT, 0x7FFFFFFF, 0, put_name, obex_send_buf, size);
-	
+
 	wait_data_to_send = FALSE;
 }
 
@@ -147,7 +147,8 @@ static void oppc_push_rsp_handler(void* msg) {
 
 	if (send_buf_pos) {
 		send_from_buf();
-	}else
+	}
+	else
 		wait_data_to_send = TRUE;
 }
 
@@ -313,6 +314,13 @@ VMBOOL bt_opp_connect(VMUINT8* mac) {
 	oppc_send_connect_req(connc_id, obex_send_buf, OBEX_SEND_BUF, mac8);
 }
 
+VMBOOL bt_opp_disconnect() {
+	if (obexc_id != -1)
+		srv_oppc_send_disconnect_req(obexc_id, FALSE);
+	if (obexs_id != -1)
+		srv_oppc_send_disconnect_req(obexs_id, FALSE);
+}
+
 VMBOOL bt_opp_deinit() {
 	PLATFORM_ASSERT();
 
@@ -366,7 +374,7 @@ VMUINT32 bt_opp_read(void* buf, VMUINT32 size) {
 		size = used_size;
 
 	memcpy(buf, receive_buf, size);
-	if(used_size - size)
+	if (used_size - size)
 		memmove(receive_buf, (char*)receive_buf + size, used_size - size);
 
 	receive_buf_pos -= size;

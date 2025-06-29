@@ -32,6 +32,9 @@ void key_handler(VMINT event, VMINT keycode) {
 			bt_opp_deinit();
 			vm_exit_app();
 		}
+		else if (keycode == VM_KEY_NUM2) {
+			bt_opp_disconnect();
+		}
 	}
 }
 

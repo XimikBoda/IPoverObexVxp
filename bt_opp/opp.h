@@ -10,6 +10,7 @@ extern "C" {
 VMBOOL bt_opp_preinit();
 VMBOOL bt_opp_init();
 VMBOOL bt_opp_connect(VMUINT8* mac);
+VMBOOL bt_opp_disconnect();
 VMBOOL bt_opp_deinit();
 
 VMBOOL bt_opp_is_connected();

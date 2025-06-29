@@ -66,6 +66,19 @@ bool TCP_sock::make_receive_packet() {
 	return true;
 }
 
+bool TCP_sock::make_disconnect_packet() {
+	auto& writer = owner->owner.writer;
+
+	if (!writer.available())
+		return false;
+
+	writer.init(type_id);
+	writer.putUInt8(TCP::Disconnect);
+	writer.send();
+
+	return true;
+}
+
 void TCP_sock::parseTCPConnectPacket() {
 	TCP::RspStatus rstatus = (TCP::RspStatus)owner->owner.reader.readUInt8();
 
@@ -173,6 +186,10 @@ void TCP_sock::update() {
 		break;
 	case TCP_sock::Connected:
 		break;
+	case TCP_sock::ClosingPending:
+		if (make_disconnect_packet())
+			return owner->TCPsocks.remove(id);
+		break;
 	default:
 		break;
 	}
@@ -231,6 +248,12 @@ ssize_t TCP_sock::read(void* buf, size_t size) {
 	return size;
 }
 
+void TCP_sock::close() {
+	status = ClosingPending;
+
+	update();
+}
+
 void TCP::parsePacket() {
 	if (TCPsocks.is_active(owner.id))
 		TCPsocks[owner.id].parsePacket();
@@ -280,4 +303,9 @@ ssize_t TCP::read(int id, void* buf, size_t size) {
 		return TCPsocks[id].read(buf, size);
 
 	return -1; //todo
+}
+
+void TCP::close(int id) {
+	if (TCPsocks.is_active(id))
+		return TCPsocks[id].close();
 }
