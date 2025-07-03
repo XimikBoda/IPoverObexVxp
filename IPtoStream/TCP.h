@@ -23,7 +23,7 @@ typedef void (*tcp_callback_t)(int id, TCPEvent event);
 const size_t tcp_receive_buf_size = 1024;
 const size_t tcp_send_buf_size = 1024;
 
-class TCP_sock {
+class TCPSock {
 public:
 
 	char host[256] = {};
@@ -77,7 +77,7 @@ public:
 
 class TCP {
 	friend class IPtoStream;
-	friend class TCP_sock;
+	friend class TCPSock;
 
 	class IPtoStream &owner;
 	uint8_t my_type;
@@ -101,7 +101,7 @@ class TCP {
 
 	TCP(IPtoStream &owner_, uint8_t type);
 
-	ItemsMngConst<TCP_sock, 10> TCPsocks;
+	ItemsMngConst<TCPSock, 10> TCPsocks;
 
 
 	void parsePacket();

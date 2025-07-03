@@ -5,12 +5,12 @@
 
 TCP::TCP(IPtoStream& owner_, uint8_t type) : owner(owner_), my_type(type) {}
 
-void TCP_sock::sendCallbackEvent(TCPEvent event) {
+void TCPSock::sendCallbackEvent(TCPEvent event) {
 	if (callback)
 		callback(id, event);
 }
 
-void TCP_sock::send() {
+void TCPSock::send() {
 	if (!send_buf_pos)
 		return;
 
@@ -35,7 +35,7 @@ void TCP_sock::send() {
 	send_buf_pos -= size;
 }
 
-bool TCP_sock::make_init_packet() {
+bool TCPSock::make_init_packet() {
 	auto& writer = owner->owner.writer;
 
 	if (!writer.available())
@@ -49,7 +49,7 @@ bool TCP_sock::make_init_packet() {
 	return true;
 }
 
-bool TCP_sock::make_connect_packet() {
+bool TCPSock::make_connect_packet() {
 	auto& writer = owner->owner.writer;
 
 	if (!writer.available())
@@ -65,7 +65,7 @@ bool TCP_sock::make_connect_packet() {
 	return true;
 }
 
-bool TCP_sock::make_receive_packet() {
+bool TCPSock::make_receive_packet() {
 	auto& writer = owner->owner.writer;
 
 	if (!writer.available())
@@ -79,7 +79,7 @@ bool TCP_sock::make_receive_packet() {
 	return true;
 }
 
-bool TCP_sock::make_disconnect_packet() {
+bool TCPSock::make_disconnect_packet() {
 	auto& writer = owner->owner.writer;
 
 	if (!writer.available())
@@ -92,7 +92,7 @@ bool TCP_sock::make_disconnect_packet() {
 	return true;
 }
 
-void TCP_sock::parseTCPConnectPacket() {
+void TCPSock::parseTCPConnectPacket() {
 	TCP::RspStatus rstatus = (TCP::RspStatus)owner->owner.reader.readUInt8();
 
 	switch (rstatus)
@@ -123,7 +123,7 @@ void TCP_sock::parseTCPConnectPacket() {
 	}
 }
 
-void TCP_sock::parseTCPSendPacket() {
+void TCPSock::parseTCPSendPacket() {
 	TCP::RspStatus rstatus = (TCP::RspStatus)owner->owner.reader.readUInt8();
 	size_t sended = (TCP::RspStatus)owner->owner.reader.readVarInt(); //TODO
 
@@ -142,7 +142,7 @@ void TCP_sock::parseTCPSendPacket() {
 	}
 }
 
-void TCP_sock::parseTCPReceivePacket() {
+void TCPSock::parseTCPReceivePacket() {
 	PacketReader& reader = owner->owner.reader;
 	TCP::RspStatus rstatus = (TCP::RspStatus)reader.readUInt8();
 
@@ -170,7 +170,7 @@ void TCP_sock::parseTCPReceivePacket() {
 	}
 }
 
-void TCP_sock::parsePacket() {
+void TCPSock::parsePacket() {
 	uint8_t act = owner->owner.reader.readUInt8();
 
 	switch (act) {
@@ -186,24 +186,24 @@ void TCP_sock::parsePacket() {
 	}
 }
 
-void TCP_sock::update() {
+void TCPSock::update() {
 	switch (status)
 	{
-	case TCP_sock::None:
+	case TCPSock::None:
 		break;
-	case TCP_sock::InitPending:
+	case TCPSock::InitPending:
 		if (make_init_packet())
-			status = TCP_sock::Inited;
+			status = TCPSock::Inited;
 		break;
-	case TCP_sock::ConnectPending:
+	case TCPSock::ConnectPending:
 		if (make_connect_packet())
-			status = TCP_sock::ConnectSent;
+			status = TCPSock::ConnectSent;
 		break;
-	case TCP_sock::ConnectSent:
+	case TCPSock::ConnectSent:
 		break;
-	case TCP_sock::Connected:
+	case TCPSock::Connected:
 		break;
-	case TCP_sock::ClosingPending:
+	case TCPSock::ClosingPending:
 		if (make_disconnect_packet())
 			return owner->TCPsocks.remove(id);
 		break;
@@ -216,12 +216,12 @@ void TCP_sock::update() {
 			receive_count = 0;
 }
 
-void TCP_sock::updateData() {
-	if (status == TCP_sock::Connected)
+void TCPSock::updateData() {
+	if (status == TCPSock::Connected)
 		send();
 }
 
-ssize_t TCP_sock::write(const void* buf, size_t size) {
+ssize_t TCPSock::write(const void* buf, size_t size) {
 	int free_size = tcp_send_buf_size - send_buf_pos;
 	if (size > free_size)
 		size = free_size;
@@ -240,7 +240,7 @@ ssize_t TCP_sock::write(const void* buf, size_t size) {
 	return size;
 }
 
-ssize_t TCP_sock::read(void* buf, size_t size) {
+ssize_t TCPSock::read(void* buf, size_t size) {
 	int used_size = receive_buf_pos;
 	if (size > used_size)
 		size = used_size;
@@ -265,7 +265,7 @@ ssize_t TCP_sock::read(void* buf, size_t size) {
 	return size;
 }
 
-void TCP_sock::close() {
+void TCPSock::close() {
 	status = ClosingPending;
 
 	update();
@@ -294,12 +294,12 @@ int TCP::init(tcp_callback_t callback)
 	if (id == -1)
 		return -1;
 
-	TCP_sock& tcpsock = TCPsocks[id];
+	TCPSock& tcpsock = TCPsocks[id];
 
 	tcpsock.id = id;
 	tcpsock.type_id = owner.writer.makeTypeId(my_type, id);
 	tcpsock.owner = this;
-	tcpsock.status = TCP_sock::ConnectPending;
+	tcpsock.status = TCPSock::ConnectPending;
 	tcpsock.callback = callback;
 
 	tcpsock.update();
@@ -312,14 +312,14 @@ int TCP::connect(const char* host, uint16_t port, tcp_callback_t callback) {
 	if (id == -1)
 		return -1;
 
-	TCP_sock& tcpsock = TCPsocks[id];
+	TCPSock& tcpsock = TCPsocks[id];
 
 	strcpy(tcpsock.host, host);
 	tcpsock.port = port;
 	tcpsock.id = id;
 	tcpsock.type_id = owner.writer.makeTypeId(my_type, id);
 	tcpsock.owner = this;
-	tcpsock.status = TCP_sock::ConnectPending;
+	tcpsock.status = TCPSock::ConnectPending;
 	tcpsock.callback = callback;
 
 	tcpsock.update();
