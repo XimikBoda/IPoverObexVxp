@@ -35,6 +35,19 @@ void TCP_sock::send() {
 	send_buf_pos -= size;
 }
 
+bool TCP_sock::make_init_packet() {
+	auto& writer = owner->owner.writer;
+
+	if (!writer.available())
+		return false;
+
+	writer.init(type_id);
+	writer.putUInt8(TCP::Init);
+	writer.putVarInt(tcp_receive_buf_size);
+	writer.send();
+
+	return true;
+}
 
 bool TCP_sock::make_connect_packet() {
 	auto& writer = owner->owner.writer;
@@ -178,6 +191,10 @@ void TCP_sock::update() {
 	{
 	case TCP_sock::None:
 		break;
+	case TCP_sock::InitPending:
+		if (make_init_packet())
+			status = TCP_sock::Inited;
+		break;
 	case TCP_sock::ConnectPending:
 		if (make_connect_packet())
 			status = TCP_sock::ConnectSent;
@@ -269,6 +286,25 @@ void TCP::update() {
 	for (int i = 0; i < TCPsocks.size(); ++i)
 		if (TCPsocks.is_active(i))
 			TCPsocks[i].update();
+}
+
+int TCP::init(tcp_callback_t callback)
+{
+	int id = TCPsocks.init_new_el();
+	if (id == -1)
+		return -1;
+
+	TCP_sock& tcpsock = TCPsocks[id];
+
+	tcpsock.id = id;
+	tcpsock.type_id = owner.writer.makeTypeId(my_type, id);
+	tcpsock.owner = this;
+	tcpsock.status = TCP_sock::ConnectPending;
+	tcpsock.callback = callback;
+
+	tcpsock.update();
+
+	return id;
 }
 
 int TCP::connect(const char* host, uint16_t port, tcp_callback_t callback) {

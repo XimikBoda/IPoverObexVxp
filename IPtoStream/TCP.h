@@ -43,6 +43,8 @@ public:
 
 	enum TCPStatus : uint8_t {
 		None,
+		InitPending,
+		Inited,
 		ConnectPending,
 		ConnectSent,
 		Connected,
@@ -56,6 +58,7 @@ public:
 	void sendCallbackEvent(TCPEvent event);
 	void send();
 
+	bool make_init_packet();
 	bool make_connect_packet();
 	bool make_receive_packet();
 	bool make_disconnect_packet();
@@ -80,6 +83,7 @@ class TCP {
 	uint8_t my_type;
 
 	enum TCPAct : uint8_t {
+		Init,
 		Connect,
 		Send,
 		Receive,
@@ -106,6 +110,7 @@ class TCP {
 	void update();
 
 public:
+	int init(tcp_callback_t callback); // for bind
 	int connect(const char* host, uint16_t port, tcp_callback_t callback);
 	ssize_t write(int id, const void* buf, size_t size);
 	ssize_t read(int id, void* buf, size_t size);
