@@ -2,7 +2,7 @@
 #include "ItemMng.h"
 #include <stdint.h>
 
-enum TCPEvent : uint8_t {
+enum class TCPEvent : uint8_t {
 	Connected,
 	Disconnected,
 	HostNotFound,
@@ -11,9 +11,9 @@ enum TCPEvent : uint8_t {
 
 #ifdef  USE_STD_FUNCTION
 #include <functional>
-typedef std::function<void(int id, TCPEvent event)> tcp_callback_t;
+typedef std::function<void(int id, TCPEvent event, uint32_t val)> tcp_callback_t;
 #else
-typedef void (*tcp_callback_t)(int id, TCPEvent event);
+typedef void (*tcp_callback_t)(int id, TCPEvent event, uint32_t val);
 #endif //  USE_STD_FUNCTION
 
 
@@ -24,6 +24,7 @@ class TCPSock {
 public:
 
 	char host[256] = {};
+	uint32_t ip = 0; // getted after connecting
 	uint16_t port = 0;
 	uint16_t id = 0;
 	uint16_t type_id = 0;
@@ -52,7 +53,7 @@ public:
 
 	TCPStatus status = None;
 
-	void sendCallbackEvent(TCPEvent event);
+	void sendCallbackEvent(TCPEvent event, uint32_t val = 0);
 	void send();
 
 	bool make_init_packet();

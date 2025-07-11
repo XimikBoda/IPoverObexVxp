@@ -7,6 +7,7 @@
 class IPtoStream {
 	friend class TCP;
 	friend class TCPSock;
+	friend class TCPListener;
 
 	enum Types : uint8_t {
 		TCP_T

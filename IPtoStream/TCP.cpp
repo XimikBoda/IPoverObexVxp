@@ -22,8 +22,15 @@ void TCP::update() {
 			TCPsocks[i].update();
 }
 
-int TCP::init(tcp_callback_t callback)
-{
+void TCP::TCPsock_remove(uint16_t id) {
+	TCPsocks.remove(id);
+}
+
+void TCP::TCPlistener_remove(uint16_t id) {
+	TCPlisteners.remove(id);
+}
+
+int TCP::init(tcp_callback_t callback) {
 	int id = TCPsocks.init_new_el();
 	if (id == -1)
 		return -1;
@@ -78,4 +85,33 @@ ssize_t TCP::read(int id, void* buf, size_t size) {
 void TCP::close(int id) {
 	if (TCPsocks.is_active(id))
 		return TCPsocks[id].close();
+}
+
+int TCP::lbind(uint16_t port, tcpl_callback_t callback) {
+	int id = TCPlisteners.init_new_el();
+	if (id == -1)
+		return -1;
+
+	TCPListener& tcplistener = TCPlisteners[id];
+
+	tcplistener.id = id;
+	tcplistener.type_id = owner.writer.makeTypeId(my_type, id);
+	tcplistener.owner = this;
+	tcplistener.port = port;
+	tcplistener.status = TCPListener::BindPending;
+	tcplistener.callback = callback;
+
+	tcplistener.update();
+
+	return id;
+}
+
+void TCP::laccept(int id, uint16_t tcpsock_id) {
+	if (TCPlisteners.is_active(id))
+		return TCPlisteners[id].accept(tcpsock_id);
+}
+
+void TCP::lclose(int id) {
+	if (TCPlisteners.is_active(id))
+		return TCPlisteners[id].close();
 }

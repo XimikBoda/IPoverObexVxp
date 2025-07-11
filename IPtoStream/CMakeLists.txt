@@ -7,6 +7,7 @@ add_library(${PROJECT_NAME} STATIC
     IPtoStream.h IPtoStream.cpp
     TCP.h TCP.cpp
     TCPSock.h TCPSock.cpp
+    TCPListener.h TCPListener.cpp
     PacketMaker.h PacketMaker.cpp
     PacketReader.h PacketReader.cpp
 )

@@ -4,9 +4,9 @@
 #include <cstring>
 #include <console.h>
 
-void TCPSock::sendCallbackEvent(TCPEvent event) {
+void TCPSock::sendCallbackEvent(TCPEvent event, uint32_t val) {
 	if (callback)
-		callback(id, event);
+		callback(id, event, val);
 }
 
 void TCPSock::send() {
@@ -93,13 +93,14 @@ bool TCPSock::make_disconnect_packet() {
 
 void TCPSock::parseTCPConnectPacket() {
 	TCP::RspStatus rstatus = (TCP::RspStatus)owner->owner.reader.readUInt8();
+	ip = owner->owner.reader.readUInt32();
 
 	switch (rstatus)
 	{
 	case TCP::Done:
 		if (status == TCPStatus::ConnectSent) {
 			status = TCPStatus::Connected;
-			sendCallbackEvent(TCPEvent::Connected);
+			sendCallbackEvent(TCPEvent::Connected, ip);
 		}
 		else
 			status = TCPStatus::Error;
@@ -117,7 +118,7 @@ void TCPSock::parseTCPConnectPacket() {
 	case TCP::Busy:
 	default:
 		status = TCPStatus::Error;
-		sendCallbackEvent(TCPEvent::Error);
+		sendCallbackEvent(TCPEvent::Error, ip);
 		break;
 	}
 }
@@ -204,7 +205,7 @@ void TCPSock::update() {
 		break;
 	case TCPSock::ClosingPending:
 		if (make_disconnect_packet())
-			return owner->TCPsocks.remove(id);
+			return owner->TCPsock_remove(id);
 		break;
 	default:
 		break;

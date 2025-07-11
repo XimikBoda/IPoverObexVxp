@@ -23,6 +23,7 @@ int tcp_id = -1;
 void handle_sysevt(VMINT message, VMINT param); // system events 
 
 VMUINT8 my_mac[6] = { 0x1C, 0xBF, 0xC0, 0x2A, 0xD8, 0xEA }; // temporarily here for testing
+//VMUINT8 my_mac[6] = { 0x00, 0x1B, 0x10, 0x00, 0x2A, 0xEC }; // temporarily here for testing
 
 void key_handler(VMINT event, VMINT keycode) {
 	bt_opp_flush();
@@ -64,13 +65,13 @@ void vm_main(void) {
 	cprintf("IPoverObexVxp Test TCP\n");
 
 	tcp_id = ipts.tcp.connect("google.com", 80,
-		[](int id, TCPEvent event) {
+		[](int id, TCPEvent event, uint32_t val) {
 			const char* names[4] = {
 				"Connected", "Disconnected",
 				"HostNotFound", "Error",
 			};
 
-			cprintf("tcp_callback(%d, %d (%s))\n", id, event, names[event]);
+			cprintf("tcp_callback(%d, %d (%s), %#08x)\n", id, event, names[(int)event], val);
 		});
 
 	const char* minimal_http = "POST /404 HTTP/1.0\r\n\r\n";
