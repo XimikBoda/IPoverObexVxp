@@ -16,6 +16,9 @@ void IPtoStream::parsePacket() {
 	case TCP_T:
 		tcp.parsePacket();
 		break;
+	case TCP_LISTENER_T:
+		tcp.parseListenerPacket();
+		break;
 	default:
 		break;
 	}

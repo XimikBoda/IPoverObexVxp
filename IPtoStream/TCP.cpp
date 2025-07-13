@@ -10,6 +10,11 @@ void TCP::parsePacket() {
 		TCPsocks[owner.id].parsePacket();
 }
 
+void TCP::parseListenerPacket() {
+	if (TCPlisteners.is_active(owner.id))
+		TCPlisteners[owner.id].parsePacket();
+}
+
 void TCP::updateData() {
 	for (int i = 0; i < TCPsocks.size(); ++i)
 		if (TCPsocks.is_active(i))
@@ -20,6 +25,11 @@ void TCP::update() {
 	for (int i = 0; i < TCPsocks.size(); ++i)
 		if (TCPsocks.is_active(i))
 			TCPsocks[i].update();
+
+
+	for (int i = 0; i < TCPlisteners.size(); ++i)
+		if (TCPlisteners.is_active(i))
+			TCPlisteners[i].update();
 }
 
 void TCP::TCPsock_remove(uint16_t id) {
@@ -38,9 +48,9 @@ int TCP::init(tcp_callback_t callback) {
 	TCPSock& tcpsock = TCPsocks[id];
 
 	tcpsock.id = id;
-	tcpsock.type_id = owner.writer.makeTypeId(my_type, id);
+	tcpsock.type_id = owner.writer.makeTypeId(owner.TCP_T, id);
 	tcpsock.owner = this;
-	tcpsock.status = TCPSock::ConnectPending;
+	tcpsock.status = TCPSock::InitPending;
 	tcpsock.callback = callback;
 
 	tcpsock.update();
@@ -58,7 +68,7 @@ int TCP::connect(const char* host, uint16_t port, tcp_callback_t callback) {
 	strcpy(tcpsock.host, host);
 	tcpsock.port = port;
 	tcpsock.id = id;
-	tcpsock.type_id = owner.writer.makeTypeId(my_type, id);
+	tcpsock.type_id = owner.writer.makeTypeId(owner.TCP_T, id);
 	tcpsock.owner = this;
 	tcpsock.status = TCPSock::ConnectPending;
 	tcpsock.callback = callback;
@@ -95,7 +105,7 @@ int TCP::lbind(uint16_t port, tcpl_callback_t callback) {
 	TCPListener& tcplistener = TCPlisteners[id];
 
 	tcplistener.id = id;
-	tcplistener.type_id = owner.writer.makeTypeId(my_type, id);
+	tcplistener.type_id = owner.writer.makeTypeId(owner.TCP_LISTENER_T, id);
 	tcplistener.owner = this;
 	tcplistener.port = port;
 	tcplistener.status = TCPListener::BindPending;

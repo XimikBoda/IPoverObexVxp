@@ -42,6 +42,7 @@ class TCP {
 
 
 	void parsePacket();
+	void parseListenerPacket();
 
 	void updateData();
 	void update();

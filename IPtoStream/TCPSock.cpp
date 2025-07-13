@@ -28,7 +28,7 @@ void TCPSock::send() {
 	writer.putBuf(send_buf, size);
 	writer.send();
 
-	if(send_buf_pos - size)
+	if (send_buf_pos - size)
 		memmove(send_buf, send_buf + size, send_buf_pos - size);
 
 	send_buf_pos -= size;
@@ -98,7 +98,8 @@ void TCPSock::parseTCPConnectPacket() {
 	switch (rstatus)
 	{
 	case TCP::Done:
-		if (status == TCPStatus::ConnectSent) {
+		if (status == TCPStatus::ConnectSent
+			|| status == TCPStatus::Inited) {
 			status = TCPStatus::Connected;
 			sendCallbackEvent(TCPEvent::Connected, ip);
 		}
@@ -129,7 +130,7 @@ void TCPSock::parseTCPSendPacket() {
 
 	switch (rstatus)
 	{
-	//case TCP::NotReady: //TODO
+		//case TCP::NotReady: //TODO
 	case TCP::Disconnected:
 		status = TCPStatus::Disconnected;
 		sendCallbackEvent(TCPEvent::Disconnected);

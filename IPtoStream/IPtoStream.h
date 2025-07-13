@@ -10,7 +10,8 @@ class IPtoStream {
 	friend class TCPListener;
 
 	enum Types : uint8_t {
-		TCP_T
+		TCP_T,
+		TCP_LISTENER_T,
 	};
 
 	PacketMaker writer;

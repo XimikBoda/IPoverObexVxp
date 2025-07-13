@@ -19,6 +19,9 @@ VMINT screen_w = 0;
 VMINT screen_h = 0;
 
 int tcp_id = -1;
+int tcpl_id = -1;
+
+bool connected = false;
 
 void handle_sysevt(VMINT message, VMINT param); // system events 
 
@@ -43,6 +46,35 @@ extern "C" VMUINT8* get_buf() {
 	return layer_buf;
 }
 
+void tcp_callback(int id, TCPEvent event, uint32_t val) {
+	const char* names[4] = {
+			"Connected", "Disconnected",
+			"HostNotFound", "Error",
+	};
+
+	cprintf("tcp_callback(%d, %d (%s), %#08x)\n", id, event, names[(int)event], val);
+	switch (event)
+	{
+	case TCPEvent::Connected:
+		connected = true;
+		{
+			const char* hello = "TCP Relay\n";
+			ipts.tcp.write(tcp_id, hello, strlen(hello));
+		}
+		break;
+	case TCPEvent::Disconnected:
+	case TCPEvent::HostNotFound:
+	case TCPEvent::Error:
+		connected = false;
+		ipts.tcp.close(tcp_id);
+		tcp_id = ipts.tcp.init(tcp_callback);
+		ipts.tcp.laccept(id, tcp_id);
+		break;
+	default:
+		break;
+	}
+}
+
 void vm_main(void) {
 	layer_hdl[0] = -1;
 	screen_w = vm_graphic_get_screen_width();
@@ -64,23 +96,27 @@ void vm_main(void) {
 
 	cprintf("IPoverObexVxp Test TCP\n");
 
-	tcp_id = ipts.tcp.connect("google.com", 80,
-		[](int id, TCPEvent event, uint32_t val) {
-			const char* names[4] = {
-				"Connected", "Disconnected",
-				"HostNotFound", "Error",
-			};
+	tcp_id = ipts.tcp.init(tcp_callback);
 
-			cprintf("tcp_callback(%d, %d (%s), %#08x)\n", id, event, names[(int)event], val);
+	tcpl_id = ipts.tcp.lbind(400, [](int id, TCPLEvent event) {
+		const char* names[3] = {
+				"Binded", "Accepted",
+				"Error",
+		};
+
+		cprintf("tcpl_callback(%d, %d (%s))\n", id, event, names[(int)event]);
+
+		switch (event) {
+		case TCPLEvent::Binded:
+			ipts.tcp.laccept(id, tcp_id);
+			break;
+		}
 		});
-
-	const char* minimal_http = "POST /404 HTTP/1.0\r\n\r\n";
-	ipts.tcp.write(tcp_id, minimal_http, strlen(minimal_http));
 
 	vm_create_timer(100, [](int tid) {
 		ipts.update();
 
-		while (true) {
+		while (connected) {
 			char buf[101] = {};
 
 			size_t size = ipts.tcp.read(tcp_id, buf, 100);
@@ -89,6 +125,9 @@ void vm_main(void) {
 				buf[size] = 0;
 
 				cprintf("%s", buf);
+
+				ipts.tcp.write(tcp_id, buf, size);
+				ipts.update();
 			}
 			else
 				break;
