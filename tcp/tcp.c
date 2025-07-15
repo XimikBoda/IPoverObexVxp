@@ -75,15 +75,15 @@ VMBOOL tcp_is_connected() {
 }
 
 void tcp_flush() {
-	if (RECEIVE_BUF - send_buf_pos) {
-		int res = vm_tcp_read(sock_id, (char*)send_buf + send_buf_pos, RECEIVE_BUF - send_buf_pos);
-		if (res >= 0)
-			send_buf_pos += res;
+	if (RECEIVE_BUF - receive_buf_pos) {
+		int res = vm_tcp_read(sock_id, (char*)receive_buf + receive_buf_pos, RECEIVE_BUF - receive_buf_pos);
+		if (res > 0)
+			receive_buf_pos += res;
 	}
 
 	if (send_buf_pos) {
-		int res = vm_tcp_write(sock_id, (char*)send_buf + send_buf_pos, send_buf_pos);
-		if (res >= 0) {
+		int res = vm_tcp_write(sock_id, (char*)send_buf, send_buf_pos);
+		if (res > 0) {
 			memmove(send_buf, (char*)send_buf + res, send_buf_pos - res);
 			send_buf_pos -= res;
 		}
@@ -95,14 +95,14 @@ VMUINT32 tcp_get_free_size() {
 }
 
 VMUINT32 tcp_write(const void* buf, VMUINT32 size) {
-	VMUINT32 free_size = bt_opp_get_free_size();
+	VMUINT32 free_size = tcp_get_free_size();
 	if (size > free_size)
 		size = free_size;
 
 	memcpy((char*)send_buf + send_buf_pos, buf, size);
 	send_buf_pos += size;
 
-	bt_opp_flush();
+	tcp_flush();
 
 	return size;
 }
@@ -119,7 +119,7 @@ VMUINT32 tcp_read(void* buf, VMUINT32 size) {
 
 	receive_buf_pos -= size;
 
-	bt_opp_flush();
+	tcp_flush();
 
 	return size;
 }
@@ -134,7 +134,7 @@ void tcp_set_as_readed(VMUINT32 size) {
 
 	receive_buf_pos -= size;
 
-	bt_opp_flush();
+	tcp_flush();
 }
 
 void* tcp_get_receive_buf() {

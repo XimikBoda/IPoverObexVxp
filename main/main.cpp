@@ -89,9 +89,15 @@ void vm_main(void) {
 
 	console_init(screen_w, screen_h, (VMUINT16*)layer_buf);
 	//cprintf("IPoverObexVxp Test injection\n");
-
+#ifdef WIN32
+	ipts.init(StreamType::TCP);
+	ipts.connectTCP("127.0.0.1");
+#else
 	ipts.init(StreamType::BT);
 	ipts.connectBT(my_mac);
+#endif // WIN32
+
+	
 
 	cprintf("IPoverObexVxp Test TCP\n");
 

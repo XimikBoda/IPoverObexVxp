@@ -58,6 +58,10 @@ void IPtoStream::connectBT(uint8_t mac[6]) {
 	bt_opp_connect(mac);
 }
 
+void IPtoStream::connectTCP(const char* adr) {
+	tcp_connect(adr, 0x1105);
+}
+
 void IPtoStream::update() {
 	switch (stype) {
 	case StreamType::BT:
