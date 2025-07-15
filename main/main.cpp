@@ -29,9 +29,9 @@ VMUINT8 my_mac[6] = { 0x1C, 0xBF, 0xC0, 0x2A, 0xD8, 0xEA }; // temporarily here 
 //VMUINT8 my_mac[6] = { 0x00, 0x1B, 0x10, 0x00, 0x2A, 0xEC }; // temporarily here for testing
 
 void key_handler(VMINT event, VMINT keycode) {
-	bt_opp_flush();
+	//bt_opp_flush();
 	vm_graphic_flush_layer(layer_hdl, 1);
-	if (event == VM_KEY_EVENT_UP) {
+	/*if (event == VM_KEY_EVENT_UP) {
 		if (keycode == VM_KEY_NUM1) {
 			bt_opp_deinit();
 			vm_exit_app();
@@ -39,7 +39,7 @@ void key_handler(VMINT event, VMINT keycode) {
 		else if (keycode == VM_KEY_NUM2) {
 			bt_opp_disconnect();
 		}
-	}
+	}*/
 }
 
 extern "C" VMUINT8* get_buf() {
@@ -88,11 +88,10 @@ void vm_main(void) {
 	vm_reg_keyboard_callback(key_handler);
 
 	console_init(screen_w, screen_h, (VMUINT16*)layer_buf);
-	cprintf("IPoverObexVxp Test injection\n");
+	//cprintf("IPoverObexVxp Test injection\n");
 
-	bt_opp_preinit();
-	bt_opp_init();
-	bt_opp_connect(my_mac);
+	ipts.init(StreamType::BT);
+	ipts.connectBT(my_mac);
 
 	cprintf("IPoverObexVxp Test TCP\n");
 
@@ -113,7 +112,7 @@ void vm_main(void) {
 		}
 		});
 
-	vm_create_timer(100, [](int tid) {
+	vm_create_timer(16, [](int tid) {
 		ipts.update();
 
 		while (connected) {
@@ -146,7 +145,7 @@ void handle_sysevt(VMINT message, VMINT param) {
 	case VM_MSG_HIDE:
 		break;
 	case VM_MSG_QUIT:
-		bt_opp_deinit();
+		ipts.quit();
 		break;
 	}
 #else
@@ -162,7 +161,7 @@ void handle_sysevt(VMINT message, VMINT param) {
 	case VM_MSG_INACTIVE:
 		break;
 	case VM_MSG_QUIT:
-		bt_opp_deinit();
+		ipts.quit();
 		break;
 	}
 #endif

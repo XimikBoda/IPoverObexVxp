@@ -1,5 +1,7 @@
 #include "IPtoStream.h"
 #include <console.h>
+#include <opp.h>
+#include <stcp.h>
 
 #undef ipts
 
@@ -28,12 +30,70 @@ void IPtoStream::parsePacket() {
 
 inline IPtoStream::IPtoStream() : tcp(*this, TCP_T) {}
 
+void IPtoStream::init(StreamType type) {
+	stype = type;
+
+	switch (stype) {
+	case StreamType::BT:
+		bt_opp_preinit();
+		bt_opp_init();
+
+		writer.s_write = bt_opp_write;
+		reader.s_get_receive_size = bt_opp_get_receive_size;
+		reader.s_get_receive_buf = bt_opp_get_receive_buf;
+		reader.s_set_as_readed = bt_opp_set_as_readed;
+		break;
+	case StreamType::TCP:
+		tcp_init();
+
+		writer.s_write = tcp_write;
+		reader.s_get_receive_size = tcp_get_receive_size;
+		reader.s_get_receive_buf = tcp_get_receive_buf;
+		reader.s_set_as_readed = tcp_set_as_readed;
+		break;
+	}
+}
+
+void IPtoStream::connectBT(uint8_t mac[6]) {
+	bt_opp_connect(mac);
+}
+
 void IPtoStream::update() {
+	switch (stype) {
+	case StreamType::BT:
+		bt_opp_flush();
+		break;
+	case StreamType::TCP:
+		tcp_flush();
+		break;
+	}
+
 	if (reader.check_receive())
 		parsePacket();
-
 
 	tcp.update();
 
 	tcp.updateData();
+}
+
+void IPtoStream::disconect() {
+	switch (stype) {
+	case StreamType::BT:
+		bt_opp_disconnect();
+		break;
+	case StreamType::TCP:
+		break;
+	}
+}
+
+void IPtoStream::quit() {
+	disconect();
+
+	switch (stype) {
+	case StreamType::BT:
+		bt_opp_deinit();
+		break;
+	case StreamType::TCP:
+		break;
+	}
 }

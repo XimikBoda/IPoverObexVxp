@@ -343,7 +343,7 @@ void bt_opp_flush() {
 	if (wait_data_to_send && RECEIVE_BUF - receive_buf_pos > opcs_mtu)
 		send_from_buf();
 
-	if (wait_space_to_receive && RECEIVE_BUF - send_buf_pos > opcs_mtu) {
+	if (wait_space_to_receive && SEND_BUF - send_buf_pos > opcs_mtu) {
 		wait_space_to_receive = FALSE;
 		opps_general_rsp(GOEP_PUSH_RES, obexs_id, GOEP_STATUS_SUCCESS);
 	}

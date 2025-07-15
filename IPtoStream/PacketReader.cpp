@@ -1,6 +1,5 @@
 #include "PacketReader.h"
 #include <string.h>
-#include <opp.h>
 
 static const int SEGMENT_BITS = 0x7F;
 static const int CONTINUE_BIT = 0x80;
@@ -16,11 +15,11 @@ uint16_t PacketReader::getId(uint16_t type_id) {
 }
 
 bool PacketReader::check_receive() {
-	receive_buf_size = bt_opp_get_receive_size();
+	receive_buf_size = s_get_receive_size();
 	if (receive_buf_size < 3)
 		return false;
 
-	receive_buf = (uint8_t*)bt_opp_get_receive_buf();
+	receive_buf = (uint8_t*)s_get_receive_buf();
 	if (!receive_buf)
 		return false;
 
@@ -75,5 +74,5 @@ size_t PacketReader::get_size_to_end() {
 }
 
 void PacketReader::end() {
-	bt_opp_set_as_readed(packet_buf_size);
+	s_set_as_readed(packet_buf_size);
 }

@@ -4,6 +4,11 @@
 #include "PacketReader.h"
 #include "TCP.h"
 
+enum class StreamType {
+	BT,
+	TCP
+};
+
 class IPtoStream {
 	friend class TCP;
 	friend class TCPSock;
@@ -20,12 +25,21 @@ class IPtoStream {
 	uint16_t type;
 	uint16_t id;
 
+	StreamType stype;
+
 	void parsePacket();
 
 public:
 	IPtoStream();
 
+	void init(StreamType type);
+	void connectBT(uint8_t mac[6]);
+	void connectTCP(const char *adr);
+
 	void update();
+
+	void disconect();
+	void quit();
 
 	TCP tcp;
 };

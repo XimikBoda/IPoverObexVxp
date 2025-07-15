@@ -1,14 +1,21 @@
 #pragma once
 #include <stdint.h>
 #include <cstddef>
+#include <vmsys.h>
 
 
 class PacketReader {
+	friend class IPtoStream;
 	uint8_t* receive_buf = 0;
 	size_t pos = 0;
 
 	size_t receive_buf_size = 0;
 	size_t packet_buf_size = 0;
+
+	VMUINT32 (*s_get_receive_size)();
+	void* (*s_get_receive_buf)();
+	void (*s_set_as_readed)(VMUINT32 size);
+
 public:
 
 	static uint16_t getType(uint16_t type_id);

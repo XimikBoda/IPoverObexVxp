@@ -1,6 +1,5 @@
 #include "PacketMaker.h"
 #include <string.h>
-#include <opp.h>
 
 static const int SEGMENT_BITS = 0x7F;
 static const int CONTINUE_BIT = 0x80;
@@ -64,8 +63,8 @@ void PacketMaker::putString(const char* str) {
 void PacketMaker::send() {
 	update_size();
 
-	bt_opp_write(vec, size);
-	bt_opp_flush();
+	s_write(vec, size);
+	//bt_opp_flush(); // todo
 
 	done = true;
 }
