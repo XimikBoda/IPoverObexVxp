@@ -139,6 +139,12 @@ void vm_main(void) {
 		}
 		vm_graphic_flush_layer(layer_hdl, 1);
 		});
+
+	vm_create_timer(2000, [](int tid) {
+		ipts.log.post(Log::Level::Info, "App1", "Some simple text");
+
+		ipts.log.pprintf(Log::Level::Debug, "App2", "Some printf like text, and ticks: %d", vm_get_tick_count());
+		});
 }
 
 void handle_sysevt(VMINT message, VMINT param) {

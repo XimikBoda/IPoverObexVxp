@@ -3,6 +3,7 @@
 #include "PacketMaker.h"
 #include "PacketReader.h"
 #include "TCP.h"
+#include "Log.h"
 
 enum class StreamType {
 	BT,
@@ -10,11 +11,13 @@ enum class StreamType {
 };
 
 class IPtoStream {
+	friend class Log;
 	friend class TCP;
 	friend class TCPSock;
 	friend class TCPListener;
 
 	enum Types : uint8_t {
+		LOG_T,
 		TCP_T,
 		TCP_LISTENER_T,
 	};
@@ -42,6 +45,7 @@ public:
 	void quit();
 
 	TCP tcp;
+	Log log;
 };
 
 extern IPtoStream ipts;

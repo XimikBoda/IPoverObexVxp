@@ -28,7 +28,7 @@ void IPtoStream::parsePacket() {
 	reader.end();
 }
 
-inline IPtoStream::IPtoStream() : tcp(*this, TCP_T) {}
+inline IPtoStream::IPtoStream() : tcp(*this, TCP_T), log(*this, LOG_T) {}
 
 void IPtoStream::init(StreamType type) {
 	stype = type;
@@ -76,8 +76,10 @@ void IPtoStream::update() {
 		parsePacket();
 
 	tcp.update();
+	log.update();
 
 	tcp.updateData();
+
 }
 
 void IPtoStream::disconect() {

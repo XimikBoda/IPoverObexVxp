@@ -3,6 +3,7 @@ set(PROJECT_NAME "IPtoStream")
 add_library(${PROJECT_NAME} STATIC 
     ItemMng.h
     IPtoStream.h IPtoStream.cpp
+    Log.h Log.cpp
     TCP.h TCP.cpp
     TCPSock.h TCPSock.cpp
     TCPListener.h TCPListener.cpp

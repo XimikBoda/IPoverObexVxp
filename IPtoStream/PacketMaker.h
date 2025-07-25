@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <vmsys.h>
 
-const size_t PM_max_size = 1024; 
+const size_t PM_max_size = 1024 * 10;
 
 class PacketMaker {
 	friend class IPtoStream;
@@ -14,7 +14,7 @@ class PacketMaker {
 
 	void update_size();
 
-	VMUINT32 (*s_write)(const void* buf, VMUINT32 size) = 0;
+	VMUINT32(*s_write)(const void* buf, VMUINT32 size) = 0;
 public:
 	static uint16_t makeTypeId(uint16_t type, uint16_t id);
 
