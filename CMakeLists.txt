@@ -28,5 +28,6 @@ add_subdirectory(bt_opp)
 add_subdirectory(tcp)
 add_subdirectory(console)
 add_subdirectory(IPtoStream)
+add_subdirectory(UI)
 
 add_subdirectory(main)

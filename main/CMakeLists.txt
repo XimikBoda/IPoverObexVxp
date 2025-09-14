@@ -12,4 +12,4 @@ add_exec_vxp(${TARGET_NAME}
     RAM "${RAM}"
 )
 
-target_link_libraries(${TARGET_NAME} mreapi console bt_opp IPtoStream)
+target_link_libraries(${TARGET_NAME} mreapi console bt_opp IPtoStream UI)
