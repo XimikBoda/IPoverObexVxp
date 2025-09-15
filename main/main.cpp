@@ -13,6 +13,7 @@
 #include <IPtoStream.h>
 #include <T2Input.h>
 #include <UIEngine.h>
+#include <UIConnectMenu.h>
 #include <Render.h>
 
 VMINT		layer_hdl[2];	// layer handle array. 
@@ -34,6 +35,7 @@ UIEngine uiengine;
 VMUINT8 my_mac[6] = { 0x1C, 0xBF, 0xC0, 0x2A, 0xD8, 0xEA }; // temporarily here for testing
 //VMUINT8 my_mac[6] = { 0x00, 0x1B, 0x10, 0x00, 0x2A, 0xEC }; // temporarily here for testing
 
+UIConnectMenu* uicm = 0;
 
 extern "C" void flush_layer() {
 	vm_graphic_flush_layer(layer_hdl, 2);
@@ -82,6 +84,10 @@ void vm_main(void) {
 	layer_buf[1] = vm_graphic_get_layer_buffer(layer_hdl[1]);
 	vm_graphic_set_clip(0, 0, screen_w, screen_h);
 
+	vm_graphic_fill_rect(layer_buf[1], 0, 0, screen_w, screen_h, tr_color, tr_color);
+	vm_graphic_fill_rect(layer_buf[0], 0, 0, screen_w, screen_h, 0, 0);
+
+	uicm = new UIConnectMenu();
 
 	t2input.init();
 	uiengine.init();
@@ -90,7 +96,7 @@ void vm_main(void) {
 	t2input.scr_buf = (unsigned char*)layer_buf[1];
 	t2input.layer_handle = layer_hdl[1];
 
-	uiengine.PushUI(uise);
+	uiengine.PushUI(uicm);
 
 	vm_reg_sysevt_callback(handle_sysevt);
 	vm_reg_keyboard_callback(handle_keyevt);
@@ -109,7 +115,7 @@ void vm_main(void) {
 	uiengine.Draw((unsigned short*)layer_buf[0]);
 	flush_layer();
 
-	cprintf("IPoverObexVxp Test TCP\n");
+	cprintf("IPoverObexVxp Test\n");
 }
 
 void handle_sysevt(VMINT message, VMINT param) {

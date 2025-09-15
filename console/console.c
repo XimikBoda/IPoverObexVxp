@@ -29,8 +29,13 @@ void console_init(int _scr_w, int _scr_h, unsigned short* _scr_buf) {
 
 static void scroll_up() {
 	int line_size = scr_width * char_height;
-	memmove(scr_buf, scr_buf + line_size, (scr_width * scr_height - line_size) * 2);
+
+	VMUINT16* scr_buf_beg = scr_buf + (scr_width * scr_height - line_size * 10);
+
+	memmove(scr_buf_beg, scr_buf_beg + line_size, (line_size * 10 - line_size) * 2);
 	memset(scr_buf + (scr_width * scr_height - line_size), 0, line_size * 2);
+	//memmove(scr_buf, scr_buf + line_size, (scr_width * scr_height - line_size) * 2);
+	//memset(scr_buf + (scr_width * scr_height - line_size), 0, line_size * 2);
 }
 
 static void draw_xy_char(int x, int y, char c) {
